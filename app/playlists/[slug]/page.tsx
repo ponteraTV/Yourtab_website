@@ -1,0 +1,5 @@
+import { notFound } from "next/navigation";
+import { SiteLayout } from "@/components/site-layout";
+import { VideoCard } from "@/components/video-card";
+import { playlists, videos } from "@/lib/content";
+export default async function PlaylistPage({ params }: { params: Promise<{ slug: string }> }) { const { slug } = await params; const playlist = playlists.find(p => p.slug === slug); if (!playlist) notFound(); return <SiteLayout><div className="px-4 py-10 sm:px-6 lg:px-10"><div className={`rounded-3xl bg-gradient-to-br ${playlist.cover} px-7 py-14 text-white sm:px-12`}><p className="text-sm font-bold uppercase tracking-widest text-white/70">Playlist · {playlist.count} videos</p><h1 className="mt-3 text-5xl font-black tracking-tight">{playlist.title}</h1><p className="mt-4 max-w-lg text-white/80">{playlist.description}</p></div><div className="mt-10 grid gap-x-5 gap-y-8 sm:grid-cols-2 lg:grid-cols-3">{videos.map(video => <VideoCard key={video.slug} video={video}/>)}</div></div></SiteLayout>; }
