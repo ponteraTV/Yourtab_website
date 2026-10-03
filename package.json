@@ -1,0 +1,11 @@
+{
+  "name": "yourtab",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspaces"
+  },
+  "devDependencies": {"typescript": "^5.7.3"}
+}
