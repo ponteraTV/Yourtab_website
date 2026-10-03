@@ -1,0 +1,6 @@
+{
+  "name": "yourtab",
+  "private": true,
+  "workspaces": ["apps/*", "packages/*"],
+  "scripts": {"build": "npm run build -w @yourtab/auth && npm run build -w @yourtab/api", "test": "npm run test -w @yourtab/auth && npm run test -w @yourtab/api"}
+}
