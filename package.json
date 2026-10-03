@@ -1,0 +1,10 @@
+{
+  "name": "yourtab-website",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev": "npm run dev --workspace=@yourtab/web",
+    "build": "npm run build --workspace=@yourtab/web",
+    "lint": "npm run lint --workspace=@yourtab/web"
+  }
+}
