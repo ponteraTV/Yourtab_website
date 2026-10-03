@@ -1,0 +1,3 @@
+import { AuthForm } from "@/components/auth-form";
+import Link from "next/link";
+export default function LoginPage() { return <main className="grid min-h-screen place-items-center p-5"><section className="w-full max-w-md"><Link href="/" className="text-xl font-black tracking-[-.07em]">your<span className="text-[#ff4d37]">tab</span></Link><p className="mt-12 text-sm font-bold text-[#ff4d37]">WELCOME BACK</p><h1 className="mt-2 text-4xl font-black tracking-tight">Good to see you.</h1><p className="mt-3 text-zinc-600">Log in to save the videos and playlists you love.</p><AuthForm mode="login"/></section></main>; }

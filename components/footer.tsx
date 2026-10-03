@@ -1,0 +1,2 @@
+import Link from "next/link";
+export function Footer() { return <footer className="border-t border-zinc-200 px-6 py-10"><div className="page-shell flex flex-col justify-between gap-5 text-sm text-zinc-500 sm:flex-row"><p className="font-semibold text-zinc-800">your<span className="text-[#ff4d37]">tab</span></p><div className="flex gap-5"><Link href="/playlists">Playlists</Link><Link href="/search">Explore</Link><Link href="/login">Log in</Link></div><p>© 2026 Yourtab</p></div></footer>; }
