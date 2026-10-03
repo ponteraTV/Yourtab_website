@@ -1,0 +1,387 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+  DELETED
+}
+
+enum VideoStatus {
+  DRAFT
+  PROCESSING
+  READY
+  PUBLISHED
+  ARCHIVED
+  FAILED
+}
+
+enum VideoVisibility {
+  PRIVATE
+  UNLISTED
+  PUBLIC
+}
+
+enum AssetType {
+  SOURCE
+  THUMBNAIL
+  POSTER
+  HLS_MANIFEST
+  DASH_MANIFEST
+  CAPTION
+  TRANSCRIPT
+}
+
+enum AnalyticsEventType {
+  VIDEO_VIEW
+  VIDEO_START
+  VIDEO_PROGRESS
+  VIDEO_COMPLETE
+  VIDEO_PAUSE
+  VIDEO_SEEK
+  VIDEO_ERROR
+  AD_IMPRESSION
+  AD_CLICK
+}
+
+enum AdStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+enum AdType {
+  PRE_ROLL
+  MID_ROLL
+  POST_ROLL
+  BANNER
+  OVERLAY
+}
+
+model User {
+  id                String               @id @default(cuid())
+  email             String               @unique
+  passwordHash      String
+  firstName         String?
+  lastName          String?
+  avatarUrl         String?
+  status            UserStatus           @default(ACTIVE)
+  emailVerifiedAt   DateTime?
+  lastLoginAt       DateTime?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  deletedAt         DateTime?
+  roles             UserRole[]
+  videos            Video[]              @relation("VideoOwner")
+  sessions          Session[]
+  resetTokens       PasswordResetToken[]
+  apiKeys           ApiKey[]
+  analyticsEvents   AnalyticsEvent[]
+  adCampaigns       AdCampaign[]         @relation("CampaignOwner")
+  auditLogs         AuditLog[]           @relation("AuditActor")
+
+  @@index([status])
+  @@index([deletedAt])
+}
+
+model Role {
+  id          String           @id @default(cuid())
+  name        String           @unique
+  description String?
+  isSystem    Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String           @id @default(cuid())
+  key         String           @unique
+  resource    String
+  action      String
+  description String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  roles       RolePermission[]
+
+  @@unique([resource, action])
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  assignedBy String?
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+  grantedAt    DateTime   @default(now())
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  keyPrefix  String
+  secretHash String   @unique
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([keyPrefix])
+}
+
+model Video {
+  id                String          @id @default(cuid())
+  ownerId           String
+  title             String
+  description       String?
+  slug              String          @unique
+  status            VideoStatus     @default(DRAFT)
+  visibility        VideoVisibility @default(PRIVATE)
+  durationSeconds   Int?
+  sourceUrl         String?
+  playbackUrl       String?
+  thumbnailUrl      String?
+  publishedAt       DateTime?
+  processingError   String?
+  metadata          Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  deletedAt         DateTime?
+  owner             User            @relation("VideoOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  assets            VideoAsset[]
+  tags              VideoTag[]
+  analyticsEvents   AnalyticsEvent[]
+  dailyAnalytics    VideoAnalyticsDaily[]
+  adCampaigns       AdCampaignVideo[]
+
+  @@index([ownerId, status])
+  @@index([status, visibility, publishedAt])
+  @@index([deletedAt])
+}
+
+model VideoAsset {
+  id        String    @id @default(cuid())
+  videoId   String
+  type      AssetType
+  url       String
+  mimeType  String?
+  sizeBytes BigInt?
+  width     Int?
+  height    Int?
+  bitrate   Int?
+  language  String?
+  createdAt DateTime  @default(now())
+  video     Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, type])
+}
+
+model Tag {
+  id        String     @id @default(cuid())
+  name      String     @unique
+  createdAt DateTime   @default(now())
+  videos    VideoTag[]
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+  video   Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+  @@index([tagId])
+}
+
+model AnalyticsEvent {
+  id          String             @id @default(cuid())
+  videoId     String?
+  userId      String?
+  eventType   AnalyticsEventType
+  sessionId   String?
+  occurredAt  DateTime           @default(now())
+  watchSeconds Int?
+  positionSeconds Int?
+  countryCode String?
+  deviceType  String?
+  referrer    String?
+  metadata    Json?
+  video       Video?             @relation(fields: [videoId], references: [id], onDelete: SetNull)
+  user        User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  adImpression AdImpression?
+  adClick      AdClick?
+
+  @@index([videoId, occurredAt])
+  @@index([userId, occurredAt])
+  @@index([eventType, occurredAt])
+}
+
+model VideoAnalyticsDaily {
+  id              String   @id @default(cuid())
+  videoId         String
+  date            DateTime @db.Date
+  views           Int      @default(0)
+  uniqueViewers   Int      @default(0)
+  watchSeconds    BigInt   @default(0)
+  completions     Int      @default(0)
+  averageWatchPct Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  video           Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([videoId, date])
+  @@index([date])
+}
+
+model Advertiser {
+  id        String       @id @default(cuid())
+  name      String
+  website   String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  campaigns AdCampaign[]
+
+  @@unique([name])
+}
+
+model AdCampaign {
+  id            String              @id @default(cuid())
+  advertiserId  String
+  ownerId       String
+  name          String
+  status        AdStatus            @default(DRAFT)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  dailyBudget   Decimal?            @db.Decimal(12, 2)
+  totalBudget   Decimal?            @db.Decimal(12, 2)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  advertiser    Advertiser          @relation(fields: [advertiserId], references: [id], onDelete: Restrict)
+  owner         User                @relation("CampaignOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  ads           Ad[]
+  videos        AdCampaignVideo[]
+
+  @@index([advertiserId, status])
+  @@index([ownerId])
+  @@index([status, startsAt, endsAt])
+}
+
+model AdCampaignVideo {
+  campaignId String
+  videoId    String
+  campaign   AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  video      Video      @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, videoId])
+  @@index([videoId])
+}
+
+model Ad {
+  id          String       @id @default(cuid())
+  campaignId  String
+  name        String
+  type        AdType
+  mediaUrl    String
+  clickUrl    String?
+  durationSec Int?
+  status      AdStatus     @default(DRAFT)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  campaign    AdCampaign   @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  impressions AdImpression[]
+  clicks      AdClick[]
+
+  @@index([campaignId, status])
+}
+
+model AdImpression {
+  id        String          @id @default(cuid())
+  adId      String
+  eventId   String?         @unique
+  occurredAt DateTime       @default(now())
+  ad         Ad             @relation(fields: [adId], references: [id], onDelete: Cascade)
+  event      AnalyticsEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([adId, occurredAt])
+}
+
+model AdClick {
+  id        String          @id @default(cuid())
+  adId      String
+  eventId   String?         @unique
+  occurredAt DateTime       @default(now())
+  ad         Ad             @relation(fields: [adId], references: [id], onDelete: Cascade)
+  event      AnalyticsEvent? @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  @@index([adId, occurredAt])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
