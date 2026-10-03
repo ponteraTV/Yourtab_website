@@ -1,0 +1,26 @@
+{
+  "name": "vaultstream",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.4.1",
+  "engines": { "node": ">=22.0.0", "pnpm": ">=10.0.0" },
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev --parallel",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:generate": "pnpm --filter @vaultstream/database generate",
+    "db:migrate": "pnpm --filter @vaultstream/database migrate",
+    "db:seed": "pnpm --filter @vaultstream/database seed"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "prettier": "^3.5.3",
+    "turbo": "^2.4.4",
+    "typescript": "^5.8.2"
+  }
+}
+

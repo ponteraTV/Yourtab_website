@@ -1,0 +1,17 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Phase 1 only establishes Prisma connectivity. The VaultStream relational domain
+// schema and its first migration are intentionally introduced in Phase 2.
+model PlatformMetadata {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
