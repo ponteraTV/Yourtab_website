@@ -1,0 +1,6 @@
+{
+  "name": "yourtab",
+  "private": true,
+  "workspaces": ["packages/*"],
+  "scripts": { "test": "npm --workspace @yourtab/analytics test" }
+}
