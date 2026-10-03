@@ -1,0 +1,12 @@
+{
+  "name": "yourtab-platform",
+  "private": true,
+  "workspaces": ["apps/*"],
+  "scripts": {
+    "dev:api": "npm run dev --workspace=@yourtab/api",
+    "dev:admin": "npm run dev --workspace=@yourtab/admin",
+    "dev:web": "npm run dev --workspace=@yourtab/web",
+    "build": "npm run build --workspaces",
+    "typecheck": "npm run typecheck --workspaces"
+  }
+}

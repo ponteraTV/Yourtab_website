@@ -1,0 +1,10 @@
+{
+  "settings": { "siteName": "Yourtab", "logoUrl": "", "tagline": "A better way to discover what matters.", "primaryColor": "#172554", "accentColor": "#f97316", "footerText": "© 2026 Yourtab. Made for curious people." },
+  "homepageSections": [
+    { "id": "hero", "title": "Hero", "eyebrow": "Your day, curated", "headline": "Find your next favorite thing.", "description": "Yourtab brings the best stories, ideas, and places together in one beautifully organized space.", "ctaLabel": "Explore now", "ctaUrl": "#featured", "enabled": true, "imageUrl": "https://images.unsplash.com/photo-1499750310107-5fef28a66643?auto=format&fit=crop&w=1400&q=85" },
+    { "id": "featured", "title": "Featured", "eyebrow": "Editor’s picks", "headline": "Worth a closer look", "description": "Thoughtful finds selected to help you make the most of your time.", "ctaLabel": "View all", "ctaUrl": "/featured", "enabled": true, "imageUrl": "https://images.unsplash.com/photo-1497366754035-f200968a6e72?auto=format&fit=crop&w=900&q=85" },
+    { "id": "trending", "title": "Trending", "eyebrow": "Popular right now", "headline": "The conversations everyone is having", "description": "Fresh perspectives and useful ideas from across the community.", "ctaLabel": "See what’s trending", "ctaUrl": "/trending", "enabled": true, "imageUrl": "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=85" }
+  ],
+  "banners": [ { "id": "welcome", "title": "Build a more interesting day", "message": "Save the ideas that move you — and come back to them when it matters.", "ctaLabel": "Get started", "ctaUrl": "#featured", "enabled": true, "tone": "accent" } ],
+  "pages": [ { "id": "about", "title": "About Yourtab", "slug": "about", "excerpt": "What we are building and why.", "content": "# A more considered internet\n\nYourtab is a home for the things you want to remember, explore, and share. We believe the best of the web deserves a calmer place to live.", "published": true, "updatedAt": "2026-10-02T00:00:00.000Z" } ]
+}
