@@ -1,4 +1,4 @@
-# VaultStream
+# YourTab
 
 VaultStream is a TypeScript monorepo for secure video storage, processing, streaming, and administration. This commit completes **Phase 1 only**: repository foundation, application boundaries, Prisma connectivity foundation, and local Docker services. Authentication, database domain entities, media uploads, video processing, CMS, analytics, and admin features are intentionally not implemented yet.
 
