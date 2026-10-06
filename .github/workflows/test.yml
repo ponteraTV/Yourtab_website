@@ -1,28 +1,38 @@
-name: YourTab CI/CD Testing
+name: YourTab CI
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: 22
+          cache: pnpm
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Install pnpm
+        run: corepack prepare pnpm@10.4.1 --activate
 
       - name: Install Dependencies
-        run: npm install --legacy-peer-deps
+        run: pnpm install --no-frozen-lockfile
 
-      - name: Run Automated Tests
-        run: |
-          echo "Running test suites for YourTab..."
-          npm test --if-present
-          echo "All YourTab tests passed successfully!"
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Test
+        run: pnpm test
+
+      - name: Production Build
+        run: pnpm build
