@@ -1,6 +1,33 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
+
+function VideoPlayer({ src }: { src?: string | null }) {
+  const ref = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = ref.current;
+    if (!video || !src) return;
+
+    if (!src.includes(".m3u8") || video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = src;
+      return;
+    }
+
+    if (!Hls.isSupported()) {
+      video.src = src;
+      return;
+    }
+
+    const hls = new Hls({ enableWorker: true });
+    hls.loadSource(src);
+    hls.attachMedia(video);
+    return () => hls.destroy();
+  }, [src]);
+
+  return <video ref={ref} controls preload="metadata" className="h-full w-full object-cover" />;
+}
 
 type Video = { id:string; title:string; description?:string; views:string|number; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; };
 
@@ -46,7 +73,7 @@ export default function HomePage() {
     <section className="mx-auto max-w-7xl px-6 pb-16">
       <div className="mb-6 flex items-center justify-between"><h2 className="text-3xl font-bold">Latest videos</h2><span className="text-sm text-gray-500">{videos.length} results</span></div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{videos.map(v=><article key={v.id} className="glass-panel overflow-hidden rounded-3xl transition hover:-translate-y-1">
-        <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><video controls preload="metadata" className="h-full w-full object-cover" src={v.streamUrl||undefined}/></div>
+        <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><VideoPlayer src={v.streamUrl}/></div>
         <div className="p-5"><h3 className="line-clamp-2 text-lg font-bold">{v.title}</h3><p className="mt-2 text-sm text-gray-400">{Number(v.views).toLocaleString()} views</p><button className="mt-4 glass-button" onClick={()=>api(`/v1/videos/${v.id}/view`,{method:"POST",body:JSON.stringify({positionSec:0})}).catch(()=>{})}>Mark viewed</button></div>
       </article>)}</div>
       {!videos.length&&<div className="glass-panel rounded-3xl p-12 text-center text-gray-400">No published videos yet. Upload one from the admin area after the API and worker are running.</div>}
