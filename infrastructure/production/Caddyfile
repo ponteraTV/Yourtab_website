@@ -2,12 +2,12 @@
   email {$ACME_EMAIL}
 }
 
-{$APP_DOMAIN} {
-  encode gzip zstd
-  reverse_proxy web:3000
-}
-
 {$API_DOMAIN} {
   encode gzip zstd
   reverse_proxy api:4000
+}
+
+{$MEDIA_DOMAIN} {
+  encode gzip zstd
+  reverse_proxy minio:9000
 }
