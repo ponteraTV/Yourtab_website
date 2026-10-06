@@ -1,30 +1,17 @@
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
+import "reflect-metadata";
+import { NestFactory } from "@nestjs/core";
+import { ValidationPipe } from "@nestjs/common";
+import * as cookieParser from "cookie-parser";
+import { AppModule } from "./app.module";
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  // Phase 12: Backend Security & Protection
-  // 1. CORS Setup to allow only your frontend to access the API
-  app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  // 2. Global Validation to prevent malicious payload injections
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      forbidNonWhitelisted: true,
-      transform: true,
-    }),
-  );
-
-  const port = process.env.PORT || 4000;
-  await app.listen(port, '0.0.0.0');
-  console.log(`VaultStream Secure API is running on port ${port}`);
+  const app=await NestFactory.create(AppModule);
+  app.use(cookieParser());
+  app.enableCors({origin:process.env.FRONTEND_URL||"http://localhost:3000",credentials:true,methods:["GET","HEAD","PUT","PATCH","POST","DELETE"]});
+  app.setGlobalPrefix("api");
+  app.useGlobalPipes(new ValidationPipe({whitelist:true,forbidNonWhitelisted:false,transform:true}));
+  const port=Number(process.env.PORT||4000);
+  await app.listen(port,"0.0.0.0");
+  console.log(`VaultStream API listening on :${port}`);
 }
-
 bootstrap();
