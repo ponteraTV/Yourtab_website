@@ -1,11 +1,1 @@
-{
-  "name": "@vaultstream/database",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "build": "tsc -p tsconfig.json", "typecheck": "tsc --noEmit -p tsconfig.json", "lint": "tsc --noEmit -p tsconfig.json", "test": "node --test", "generate": "prisma generate", "migrate": "prisma migrate dev", "seed": "tsx prisma/seed.ts" },
-  "dependencies": { "@prisma/client": "^6.5.0" },
-  "devDependencies": { "prisma": "^6.5.0", "tsx": "^4.19.3" }
-}
-
+{"name":"@vaultstream/database","version":"0.2.0","private":true,"type":"module","exports":{".":"./src/index.ts"},"scripts":{"build":"tsc -p tsconfig.json","typecheck":"tsc --noEmit -p tsconfig.json","lint":"tsc --noEmit -p tsconfig.json","test":"node --test","generate":"prisma generate","migrate":"prisma migrate dev","seed":"tsx prisma/seed.ts"},"dependencies":{"@prisma/client":"^6.5.0","bcryptjs":"^3.0.2"},"devDependencies":{"prisma":"^6.5.0","tsx":"^4.19.3"}}
