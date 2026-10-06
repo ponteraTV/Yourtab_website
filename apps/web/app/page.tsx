@@ -1,49 +1,61 @@
+"use client";
+
+import { FormEvent, useEffect, useState } from "react";
+
+type Video = { id:string; title:string; description?:string; views:string|number; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; };
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+async function api(path:string, options:RequestInit={}) {
+  const res = await fetch(`${API}${path}`, { ...options, credentials:"include", headers:{"Content-Type":"application/json", ...(options.headers||{})} });
+  const json = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(json.message || "Request failed");
+  return json.data;
+}
+
 export default function HomePage() {
-  return (
-    <main className="container mx-auto px-6 py-12">
-      
-      {/* Hero Section */}
-      <section className="flex flex-col items-center text-center mt-20 mb-32">
-        <div className="glass-panel rounded-3xl p-12 max-w-3xl border-t border-l border-white/20">
-          <h1 className="text-5xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 to-purple-500">
-            Welcome to VaultStream
-          </h1>
-          <p className="text-gray-300 text-lg mb-8">
-            Experience the future of video streaming with our liquid glass interface.
-          </p>
-          <div className="flex gap-4 justify-center">
-            <button className="glass-button bg-cyan-500/20 hover:bg-cyan-500/40 border-cyan-500/50">
-              Start Watching
-            </button>
-            <button className="glass-button">
-              Explore Categories
-            </button>
-          </div>
-        </div>
-      </section>
+  const [videos,setVideos]=useState<Video[]>([]);
+  const [search,setSearch]=useState("");
+  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState("");
+  const [mode,setMode]=useState<"login"|"register">("login");
+  const [user,setUser]=useState<any>(null); const [error,setError]=useState("");
 
-      {/* Video Grid Example */}
-      <section>
-        <h2 className="text-2xl font-bold mb-8 pl-4 border-l-4 border-purple-500">Trending Videos</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          
-          {/* Glass Video Card 1 */}
-          <div className="glass-panel rounded-3xl p-4 transition hover:-translate-y-2 hover:shadow-purple-500/20 duration-300">
-            <div className="w-full h-48 bg-white/5 rounded-2xl mb-4"></div>
-            <h3 className="font-semibold text-lg mb-2">Liquid UI Design Tutorial</h3>
-            <p className="text-sm text-gray-400">120K views • 2 days ago</p>
-          </div>
+  const load=async()=>{try{const d=await api(`/v1/videos?search=${encodeURIComponent(search)}`);setVideos(d.items||[])}catch(e:any){setError(e.message)}};
+  useEffect(()=>{load();api("/v1/auth/me").then(setUser).catch(()=>{})},[]);
 
-          {/* Glass Video Card 2 */}
-          <div className="glass-panel rounded-3xl p-4 transition hover:-translate-y-2 hover:shadow-cyan-500/20 duration-300">
-            <div className="w-full h-48 bg-white/5 rounded-2xl mb-4"></div>
-            <h3 className="font-semibold text-lg mb-2">Next.js Crash Course</h3>
-            <p className="text-sm text-gray-400">85K views • 1 week ago</p>
-          </div>
+  async function submit(e:FormEvent){e.preventDefault();setError("");try{
+    const d=await api(mode==="login"?"/v1/auth/login":"/v1/auth/register",{method:"POST",body:JSON.stringify(mode==="login"?{email,password}:{name,email,password})});setUser(d);
+  }catch(e:any){setError(e.message)}}
+  async function logout(){await api("/v1/auth/logout",{method:"POST"});setUser(null)}
 
-        </div>
-      </section>
-
-    </main>
-  );
+  return <main className="min-h-screen">
+    <nav className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+        <div className="text-2xl font-black tracking-tight">Your<span className="text-cyan-400">Tab</span></div>
+        <div className="flex items-center gap-3">{user?<><span className="hidden text-sm text-gray-300 sm:block">Hi, {user.name}</span><button className="glass-button" onClick={logout}>Logout</button></>:<button className="glass-button" onClick={()=>document.getElementById("account")?.scrollIntoView({behavior:"smooth"})}>Sign in</button>}</div>
+      </div>
+    </nav>
+    <section className="mx-auto max-w-7xl px-6 pb-12 pt-20">
+      <div className="glass-panel rounded-[2rem] p-8 md:p-14">
+        <p className="mb-3 text-sm font-semibold uppercase tracking-[.3em] text-cyan-300">Premium video platform</p>
+        <h1 className="max-w-3xl text-5xl font-black leading-tight md:text-7xl">Watch. Upload. <span className="text-cyan-300">Share.</span></h1>
+        <p className="mt-6 max-w-2xl text-lg text-gray-300">A complete streaming foundation with accounts, playlists, search, likes, history, HLS processing and an admin control layer.</p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row"><input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&load()} placeholder="Search videos..." className="flex-1 rounded-full border border-white/15 bg-white/5 px-5 py-3 outline-none"/><button className="glass-button bg-cyan-400/20" onClick={load}>Search</button></div>
+      </div>
+    </section>
+    <section className="mx-auto max-w-7xl px-6 pb-16">
+      <div className="mb-6 flex items-center justify-between"><h2 className="text-3xl font-bold">Latest videos</h2><span className="text-sm text-gray-500">{videos.length} results</span></div>
+      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{videos.map(v=><article key={v.id} className="glass-panel overflow-hidden rounded-3xl transition hover:-translate-y-1">
+        <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><video controls preload="metadata" className="h-full w-full object-cover" src={v.streamUrl||undefined}/></div>
+        <div className="p-5"><h3 className="line-clamp-2 text-lg font-bold">{v.title}</h3><p className="mt-2 text-sm text-gray-400">{Number(v.views).toLocaleString()} views</p><button className="mt-4 glass-button" onClick={()=>api(`/v1/videos/${v.id}/view`,{method:"POST",body:JSON.stringify({positionSec:0})}).catch(()=>{})}>Mark viewed</button></div>
+      </article>)}</div>
+      {!videos.length&&<div className="glass-panel rounded-3xl p-12 text-center text-gray-400">No published videos yet. Upload one from the admin area after the API and worker are running.</div>}
+    </section>
+    <section id="account" className="mx-auto max-w-md px-6 pb-20"><div className="glass-panel rounded-3xl p-7"><h2 className="text-2xl font-bold">{mode==="login"?"Welcome back":"Create your account"}</h2><form onSubmit={submit} className="mt-5 space-y-3">
+      {mode==="register"&&<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Name" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>}
+      <input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>
+      <input required minLength={8} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password (8+ characters)" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>
+      {error&&<p className="text-sm text-red-300">{error}</p>}<button className="w-full rounded-xl bg-cyan-400/20 px-4 py-3 font-semibold">{mode==="login"?"Login":"Register"}</button>
+    </form><button className="mt-4 text-sm text-gray-400 underline" onClick={()=>setMode(mode==="login"?"register":"login")}>{mode==="login"?"Need an account? Register":"Already registered? Login"}</button></div></section>
+  </main>
 }
