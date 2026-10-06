@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
+import type { ChangeEvent } from "react";
 const API=process.env.NEXT_PUBLIC_API_URL||"http://localhost:4000/api";
 async function api(path:string,options:RequestInit={}){const r=await fetch(API+path,{...options,credentials:"include",headers:{"Content-Type":"application/json",...(options.headers||{})}});const j: any=await r.json().catch(()=>({}));if(!r.ok)throw new Error(j.message||"Request failed");return j.data}
 
