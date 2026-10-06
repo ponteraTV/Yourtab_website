@@ -29,7 +29,7 @@ From the repository root:
 The compose file keeps PostgreSQL/Redis/MinIO private and exposes only Caddy on ports 80/443.
 
 ## 6. Initialize the database
-After the containers are healthy, run the Prisma migration/seed commands from the API container. If this is a brand-new database, use the project's migration workflow first, then seed the admin account.
+After the containers are healthy, initialize a brand-new database with:\n\n    docker compose --env-file infrastructure/production/.env -f infrastructure/production/docker-compose.yml exec api pnpm --filter @vaultstream/database db:push\n    docker compose --env-file infrastructure/production/.env -f infrastructure/production/docker-compose.yml exec api pnpm --filter @vaultstream/database seed\n\nFor later schema changes, prefer versioned Prisma migrations and deploy them before starting new application code.
 
 The admin credentials come from ADMIN_EMAIL and ADMIN_PASSWORD in the production .env.
 
