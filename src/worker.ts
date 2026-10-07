@@ -1,6 +1,6 @@
 interface Env {
   API_ORIGIN: string;
-  ASSETS: Fetcher;
+  ASSETS: { fetch(request: Request): Promise<Response> };
 }
 
 export default {
