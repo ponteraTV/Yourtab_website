@@ -81,7 +81,7 @@ function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionS
     {playbackError && <div role="status" className="absolute inset-x-2 bottom-12 rounded-lg bg-black/85 p-3 text-sm text-white">{playbackError}</div>}
   </div>;
 }
-type Video = { id:string; title:string; description?:string; views:string|number; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; };
+type Video = { id:string; title:string; description?:string; views:string|number; hasHls?:boolean; streamUrl?:string|null; thumbnailKey?:string|null; };
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -128,7 +128,7 @@ export default function HomePage() {
       <div className="mb-6 flex items-center justify-between"><h2 className="text-3xl font-bold">Latest videos</h2><span className="text-sm text-gray-500">{videos.length} results</span></div>
       {error&&<p role="status" className="mb-4 text-sm text-red-300">{error}</p>}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{videos.map(v=><article key={v.id} className="glass-panel overflow-hidden rounded-3xl transition hover:-translate-y-1">
-        <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><VideoPlayer src={v.hlsKey ? `${API}/v1/videos/${v.id}/stream/index.m3u8` : (v.streamUrl ?? null)} onView={(positionSec)=>api(`/v1/videos/${v.id}/view`,{method:"POST",body:JSON.stringify({positionSec})}).catch(()=>{})}/></div>
+        <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><VideoPlayer src={v.hasHls ? `${API}/v1/videos/${v.id}/stream/index.m3u8` : (v.streamUrl ?? null)} onView={(positionSec)=>api(`/v1/videos/${v.id}/view`,{method:"POST",body:JSON.stringify({positionSec})}).catch(()=>{})}/></div>
         <div className="p-5"><h3 className="line-clamp-2 text-lg font-bold">{v.title}</h3><p className="mt-2 text-sm text-gray-400">{Number(v.views).toLocaleString()} views</p></div>
       </article>)}</div>
       {!videos.length&&<div className="glass-panel rounded-3xl p-12 text-center text-gray-400">No published videos yet. Upload one from the admin area after the API and worker are running.</div>}

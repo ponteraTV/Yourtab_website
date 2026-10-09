@@ -59,8 +59,22 @@ async function processVideo(videoId: string) {
     await prisma.videoJob.update({ where: { id: job.id }, data: { status: "COMPLETED", finishedAt: new Date() } });
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e);
-    await prisma.video.update({ where: { id: videoId }, data: { status: "FAILED" } });
-    await prisma.videoJob.update({ where: { id: job.id }, data: { status: "FAILED", error: message, finishedAt: new Date() } });
+    const nextAttempt = job.attempts + 1;
+    const retry = nextAttempt < 3;
+    await prisma.videoJob.update({
+      where: { id: job.id },
+      data: retry
+        ? { status: "QUEUED", error: message.slice(0, 4000), finishedAt: null }
+        : { status: "FAILED", error: message.slice(0, 4000), finishedAt: new Date() },
+    });
+    await prisma.video.update({ where: { id: videoId }, data: { status: retry ? "UPLOADING" : "FAILED" } });
+    if (retry) {
+      console.warn(`Video ${videoId} failed attempt ${nextAttempt}; retrying once more after queue delay.`);
+      await new Promise(resolve => setTimeout(resolve, Math.min(5000 * nextAttempt, 15000)));
+      await redis.lpush(queue, videoId);
+    } else {
+      console.error(`Video ${videoId} failed after ${nextAttempt} attempts.`);
+    }
   } finally { await rm(work, { recursive: true, force: true }); }
 }
 

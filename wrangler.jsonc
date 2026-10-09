@@ -3,6 +3,7 @@
   "name": "yourtab",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-10-07",
+  "previews": {},
   "build": {
     "command": "pnpm --filter @vaultstream/web build"
   },
