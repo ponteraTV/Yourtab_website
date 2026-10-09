@@ -60,16 +60,35 @@ export default function AdminPage() {
     e.target.value = "";
     if (!f || !me) return;
     const title = f.name.replace(/\.[^.]+$/, "");
+    // Some browsers report an empty File.type for valid video files.
+    // Keep the signed Content-Type identical between presign and PUT.
+    const extension = f.name.split(".").pop()?.toLowerCase() || "";
+    const knownVideoTypes: Record<string, string> = {
+      mp4: "video/mp4",
+      m4v: "video/x-m4v",
+      mov: "video/quicktime",
+      webm: "video/webm",
+      mkv: "video/x-matroska",
+      avi: "video/x-msvideo",
+      mpg: "video/mpeg",
+      mpeg: "video/mpeg",
+      "3gp": "video/3gpp",
+    };
+    const contentType = f.type.startsWith("video/") ? f.type : knownVideoTypes[extension];
+    if (!contentType) {
+      setMsg("Unsupported video type. Please choose MP4, MOV, WebM, MKV, AVI, MPEG, or 3GP.");
+      return;
+    }
     setUpload(true);
     setMsg("Uploading and queueing video…");
     try {
       const p = await api("/v1/uploads/presign", {
         method: "POST",
-        body: JSON.stringify({ filename: f.name, contentType: f.type }),
+        body: JSON.stringify({ filename: f.name, contentType }),
       });
       const put = await fetch(p.url, {
         method: "PUT",
-        headers: { "Content-Type": f.type },
+        headers: { "Content-Type": contentType },
         body: f,
       });
       if (!put.ok) {
