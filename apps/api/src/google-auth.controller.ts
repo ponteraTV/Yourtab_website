@@ -34,7 +34,7 @@ export class GoogleAuthController {
       user = await prisma.user.create({
         data: {
           email,
-          name: claims.name?.trim() || email.split("@")[0],
+          name: String(claims.name || "").trim() || email.split("@")[0] || email,
           // This random password hash cannot be used as a Google sign-in substitute.
           passwordHash: await hash(randomUUID() + randomUUID(), 12),
         },
