@@ -3,6 +3,9 @@
   "name": "yourtab",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-10-07",
+  "build": {
+    "command": "pnpm --filter @vaultstream/web build"
+  },
   "assets": {
     "directory": "./apps/web/out",
     "binding": "ASSETS",
