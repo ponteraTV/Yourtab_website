@@ -8,7 +8,7 @@ const credentials = {
 
 export const storage = new S3Client({
   region: process.env.S3_REGION || "us-east-1",
-  endpoint: process.env.S3_ENDPOINT,
+  endpoint: process.env.S3_ENDPOINT || "https://s3.amazonaws.com",
   forcePathStyle: process.env.S3_FORCE_PATH_STYLE !== "false",
   credentials,
 });
@@ -17,7 +17,7 @@ const bucket = () => process.env.S3_BUCKET || "vaultstream-media";
 
 const presignStorage = new S3Client({
   region: process.env.S3_REGION || "us-east-1",
-  endpoint: process.env.S3_PRESIGN_ENDPOINT || process.env.S3_ENDPOINT,
+  endpoint: process.env.S3_PRESIGN_ENDPOINT || process.env.S3_ENDPOINT || "https://s3.amazonaws.com",
   forcePathStyle: process.env.S3_PRESIGN_FORCE_PATH_STYLE
     ? process.env.S3_PRESIGN_FORCE_PATH_STYLE !== "false"
     : process.env.S3_FORCE_PATH_STYLE !== "false",
