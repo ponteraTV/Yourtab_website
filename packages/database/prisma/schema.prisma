@@ -121,6 +121,7 @@ model Video {
   likes          VideoLike[]
   history        WatchHistory[]
   processingJobs VideoJob[]
+  playlistItems  PlaylistItem[]
 
   @@index([status, visibility, publishedAt])
 }
