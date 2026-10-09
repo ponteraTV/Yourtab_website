@@ -52,7 +52,7 @@ async function processVideo(videoId: string) {
     const out = `${work}/hls`;
     await mkdir(out);
     await download(video.sourceKey, input);
-    await run("ffmpeg", ["-y", "-i", input, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-c:a", "aac", "-b:a", "128k", "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod", "-hls_segment_filename", `${out}/segment-%05d.ts`, `${out}/index.m3u8`]);
+    await run("ffmpeg", ["-y", "-i", input, "-map", "0:v:0", "-map", "0:a:0?", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-c:v", "libx264", "-profile:v", "baseline", "-level", "4.0", "-pix_fmt", "yuv420p", "-preset", "veryfast", "-crf", "23", "-c:a", "aac", "-profile:a", "aac_low", "-b:a", "128k", "-ac", "2", "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod", "-hls_flags", "independent_segments", "-hls_segment_filename", `${out}/segment-%05d.ts`, `${out}/index.m3u8`]);
     const prefix = `hls/${video.id}`;
     await uploadDir(out, prefix);
     await prisma.video.update({ where: { id: videoId }, data: { status: "READY", hlsKey: `${prefix}/index.m3u8`, publishedAt: video.publishedAt || new Date() } });
