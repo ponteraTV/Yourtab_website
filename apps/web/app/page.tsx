@@ -1,6 +1,7 @@
 "use client";
 
-import { FormEvent, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import Hls from "hls.js";
 
 function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionSec:number)=>void }) {
@@ -27,8 +28,6 @@ function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionS
       return () => video.removeEventListener("error", onError);
     }
 
-    // Prefer hls.js on browsers with Media Source Extensions. Some Chromium
-    // browsers return a misleading non-empty canPlayType() value for HLS.
     if (Hls.isSupported()) {
       const hls = new Hls({
         enableWorker: true,
@@ -58,7 +57,6 @@ function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionS
       return () => hls.destroy();
     }
 
-    // Safari/iOS can play HLS natively even when hls.js is unavailable.
     if (video.canPlayType("application/vnd.apple.mpegurl")) {
       const onError = () => setPlaybackError("This device could not play the HLS stream. Try refreshing the page or using an updated browser.");
       video.addEventListener("error", onError);
@@ -97,23 +95,25 @@ async function api(path:string, options:RequestInit={}) {
 export default function HomePage() {
   const [videos,setVideos]=useState<Video[]>([]);
   const [search,setSearch]=useState("");
-  const [email,setEmail]=useState(""); const [password,setPassword]=useState(""); const [name,setName]=useState("");
-  const [mode,setMode]=useState<"login"|"register">("login");
-  const [user,setUser]=useState<any>(null); const [error,setError]=useState("");
+  const [user,setUser]=useState<any>(null);
+  const [error,setError]=useState("");
 
-  const load=async()=>{try{const d=await api(`/v1/videos?search=${encodeURIComponent(search)}`);setVideos(d.items||[])}catch(e:any){setError(e.message)}};
+  const load=async()=>{try{const d=await api(`/v1/videos?search=${encodeURIComponent(search)}`);setVideos(d.items||[]);setError("")}catch(e:any){setError(e.message)}};
   useEffect(()=>{load();api("/v1/auth/me").then(setUser).catch(()=>{})},[]);
 
-  async function submit(e:FormEvent){e.preventDefault();setError("");try{
-    const d=await api(mode==="login"?"/v1/auth/login":"/v1/auth/register",{method:"POST",body:JSON.stringify(mode==="login"?{email,password}:{name,email,password})});setUser(d);
-  }catch(e:any){setError(e.message)}}
-  async function logout(){await api("/v1/auth/logout",{method:"POST"});setUser(null)}
+  async function logout(){
+    try { await api("/v1/auth/logout",{method:"POST"}); setUser(null); }
+    catch { setError("Unable to sign out. Please try again."); }
+  }
 
   return <main className="min-h-screen">
     <nav className="sticky top-0 z-20 border-b border-white/10 bg-black/60 backdrop-blur-xl">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-        <div className="text-2xl font-black tracking-tight">Your<span className="text-cyan-400">Tab</span></div>
-        <div className="flex items-center gap-3">{user?<><span className="hidden text-sm text-gray-300 sm:block">Hi, {user.name}</span><button className="glass-button" onClick={logout}>Logout</button></>:<button className="glass-button" onClick={()=>document.getElementById("account")?.scrollIntoView({behavior:"smooth"})}>Sign in</button>}</div>
+        <Link href="/" className="text-2xl font-black tracking-tight">Your<span className="text-cyan-400">Tab</span></Link>
+        <div className="flex items-center gap-3">
+          {user ? <><span className="hidden text-sm text-gray-300 sm:block">Hi, {user.name}</span><button className="glass-button" onClick={logout}>Logout</button></> :
+          <><Link href="/login" className="glass-button">Login</Link><Link href="/register" className="glass-button border-cyan-300/30 bg-cyan-400/15">Sign up</Link></>}
+        </div>
       </div>
     </nav>
     <section className="mx-auto max-w-7xl px-6 pb-12 pt-20">
@@ -126,17 +126,12 @@ export default function HomePage() {
     </section>
     <section className="mx-auto max-w-7xl px-6 pb-16">
       <div className="mb-6 flex items-center justify-between"><h2 className="text-3xl font-bold">Latest videos</h2><span className="text-sm text-gray-500">{videos.length} results</span></div>
+      {error&&<p role="status" className="mb-4 text-sm text-red-300">{error}</p>}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{videos.map(v=><article key={v.id} className="glass-panel overflow-hidden rounded-3xl transition hover:-translate-y-1">
         <div className="aspect-video bg-gradient-to-br from-cyan-500/20 to-purple-600/20"><VideoPlayer src={v.hlsKey ? `${API}/v1/videos/${v.id}/stream/index.m3u8` : (v.streamUrl ?? null)} onView={(positionSec)=>api(`/v1/videos/${v.id}/view`,{method:"POST",body:JSON.stringify({positionSec})}).catch(()=>{})}/></div>
         <div className="p-5"><h3 className="line-clamp-2 text-lg font-bold">{v.title}</h3><p className="mt-2 text-sm text-gray-400">{Number(v.views).toLocaleString()} views</p></div>
       </article>)}</div>
       {!videos.length&&<div className="glass-panel rounded-3xl p-12 text-center text-gray-400">No published videos yet. Upload one from the admin area after the API and worker are running.</div>}
     </section>
-    <section id="account" className="mx-auto max-w-md px-6 pb-20"><div className="glass-panel rounded-3xl p-7"><h2 className="text-2xl font-bold">{mode==="login"?"Welcome back":"Create your account"}</h2><form onSubmit={submit} className="mt-5 space-y-3">
-      {mode==="register"&&<input required value={name} onChange={e=>setName(e.target.value)} placeholder="Name" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>}
-      <input required type="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="Email" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>
-      <input required minLength={8} type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Password (8+ characters)" className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"/>
-      {error&&<p className="text-sm text-red-300">{error}</p>}<button className="w-full rounded-xl bg-cyan-400/20 px-4 py-3 font-semibold">{mode==="login"?"Login":"Register"}</button>
-    </form><button className="mt-4 text-sm text-gray-400 underline" onClick={()=>setMode(mode==="login"?"register":"login")}>{mode==="login"?"Need an account? Register":"Already registered? Login"}</button></div></section>
   </main>
 }
