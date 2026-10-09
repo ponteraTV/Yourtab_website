@@ -1,24 +1,244 @@
-generator client { provider = "prisma-client-js" }
-datasource db { provider = "postgresql"; url = env("DATABASE_URL") }
-enum UserRole { USER ADMIN MODERATOR }
-enum UserStatus { ACTIVE SUSPENDED DELETED }
-enum VideoStatus { DRAFT UPLOADING PROCESSING READY FAILED BLOCKED }
-enum Visibility { PUBLIC UNLISTED PRIVATE }
-enum JobStatus { QUEUED PROCESSING COMPLETED FAILED }
-enum AdType { BANNER PRE_ROLL MID_ROLL POST_ROLL }
-enum AdStatus { ACTIVE PAUSED ARCHIVED }
-model PlatformMetadata { key String @id; value String; updatedAt DateTime @updatedAt }
-model User { id String @id @default(cuid()); email String @unique; passwordHash String; name String; role UserRole @default(USER); status UserStatus @default(ACTIVE); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; lastLoginAt DateTime?; videos Video[]; likes VideoLike[]; history WatchHistory[]; playlists Playlist[]; notifications Notification[]; auditLogs AuditLog[] @relation("ActorAudit") }
-model Category { id String @id @default(cuid()); name String @unique; slug String @unique; description String?; createdAt DateTime @default(now()); videos VideoCategory[] }
-model Tag { id String @id @default(cuid()); name String @unique; slug String @unique; videos VideoTag[] }
-model Video { id String @id @default(cuid()); ownerId String; title String; slug String @unique; description String?; thumbnailKey String?; sourceKey String?; hlsKey String?; durationSec Int?; width Int?; height Int?; sizeBytes BigInt?; mimeType String?; status VideoStatus @default(DRAFT); visibility Visibility @default(PUBLIC); views BigInt @default(0); likesCount Int @default(0); publishedAt DateTime?; createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; owner User @relation(fields:[ownerId],references:[id],onDelete:Cascade); categories VideoCategory[]; tags VideoTag[]; likes VideoLike[]; history WatchHistory[]; processingJobs VideoJob[]; @@index([status,visibility,publishedAt]) }
-model VideoCategory { videoId String; categoryId String; video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); category Category @relation(fields:[categoryId],references:[id],onDelete:Cascade); @@id([videoId,categoryId]) }
-model VideoTag { videoId String; tagId String; video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); tag Tag @relation(fields:[tagId],references:[id],onDelete:Cascade); @@id([videoId,tagId]) }
-model VideoLike { userId String; videoId String; createdAt DateTime @default(now()); user User @relation(fields:[userId],references:[id],onDelete:Cascade); video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); @@id([userId,videoId]) }
-model WatchHistory { id String @id @default(cuid()); userId String; videoId String; positionSec Int @default(0); watchedAt DateTime @updatedAt; user User @relation(fields:[userId],references:[id],onDelete:Cascade); video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); @@unique([userId,videoId]); @@index([userId,watchedAt]) }
-model Playlist { id String @id @default(cuid()); userId String; name String; description String?; isPublic Boolean @default(false); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt; user User @relation(fields:[userId],references:[id],onDelete:Cascade); items PlaylistItem[] }
-model PlaylistItem { playlistId String; videoId String; position Int @default(0); playlist Playlist @relation(fields:[playlistId],references:[id],onDelete:Cascade); video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); @@id([playlistId,videoId]) }
-model VideoJob { id String @id @default(cuid()); videoId String; status JobStatus @default(QUEUED); attempts Int @default(0); error String?; createdAt DateTime @default(now()); startedAt DateTime?; finishedAt DateTime?; video Video @relation(fields:[videoId],references:[id],onDelete:Cascade); @@index([status,createdAt]) }
-model Advertisement { id String @id @default(cuid()); name String; type AdType; status AdStatus @default(PAUSED); mediaUrl String; targetUrl String?; startAt DateTime?; endAt DateTime?; impressions BigInt @default(0); clicks BigInt @default(0); createdAt DateTime @default(now()); updatedAt DateTime @updatedAt }
-model Notification { id String @id @default(cuid()); userId String; title String; body String; readAt DateTime?; createdAt DateTime @default(now()); user User @relation(fields:[userId],references:[id],onDelete:Cascade); @@index([userId,createdAt]) }
-model AuditLog { id String @id @default(cuid()); actorId String?; action String; entity String; entityId String?; metadata Json?; ip String?; createdAt DateTime @default(now()); actor User? @relation("ActorAudit",fields:[actorId],references:[id],onDelete:SetNull); @@index([createdAt]) }
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  MODERATOR
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+enum VideoStatus {
+  DRAFT
+  UPLOADING
+  PROCESSING
+  READY
+  FAILED
+  BLOCKED
+}
+
+enum Visibility {
+  PUBLIC
+  UNLISTED
+  PRIVATE
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum AdType {
+  BANNER
+  PRE_ROLL
+  MID_ROLL
+  POST_ROLL
+}
+
+enum AdStatus {
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+model PlatformMetadata {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  passwordHash  String
+  name          String
+  role          UserRole       @default(USER)
+  status        UserStatus     @default(ACTIVE)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  lastLoginAt   DateTime?
+  videos        Video[]
+  likes         VideoLike[]
+  history       WatchHistory[]
+  playlists     Playlist[]
+  notifications Notification[]
+  auditLogs     AuditLog[]     @relation("ActorAudit")
+}
+
+model Category {
+  id          String          @id @default(cuid())
+  name        String          @unique
+  slug        String          @unique
+  description String?
+  createdAt   DateTime        @default(now())
+  videos      VideoCategory[]
+}
+
+model Tag {
+  id     String     @id @default(cuid())
+  name   String     @unique
+  slug   String     @unique
+  videos VideoTag[]
+}
+
+model Video {
+  id             String          @id @default(cuid())
+  ownerId        String
+  title          String
+  slug           String          @unique
+  description    String?
+  thumbnailKey   String?
+  sourceKey      String?
+  hlsKey         String?
+  durationSec    Int?
+  width          Int?
+  height         Int?
+  sizeBytes      BigInt?
+  mimeType       String?
+  status         VideoStatus     @default(DRAFT)
+  visibility     Visibility      @default(PUBLIC)
+  views          BigInt          @default(0)
+  likesCount     Int             @default(0)
+  publishedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  owner          User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categories     VideoCategory[]
+  tags           VideoTag[]
+  likes          VideoLike[]
+  history        WatchHistory[]
+  processingJobs VideoJob[]
+
+  @@index([status, visibility, publishedAt])
+}
+
+model VideoCategory {
+  videoId   String
+  categoryId String
+  video     Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  category  Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, categoryId])
+}
+
+model VideoTag {
+  videoId String
+  tagId   String
+  video   Video @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  tag     Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([videoId, tagId])
+}
+
+model VideoLike {
+  userId    String
+  videoId   String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([userId, videoId])
+}
+
+model WatchHistory {
+  id          String   @id @default(cuid())
+  userId      String
+  videoId     String
+  positionSec Int      @default(0)
+  watchedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  video       Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId, watchedAt])
+}
+
+model Playlist {
+  id        String         @id @default(cuid())
+  userId    String
+  name      String
+  description String?
+  isPublic  Boolean        @default(false)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+  user      User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     PlaylistItem[]
+}
+
+model PlaylistItem {
+  playlistId String
+  videoId    String
+  position   Int      @default(0)
+  playlist   Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@id([playlistId, videoId])
+}
+
+model VideoJob {
+  id         String    @id @default(cuid())
+  videoId    String
+  status     JobStatus @default(QUEUED)
+  attempts   Int       @default(0)
+  error      String?
+  createdAt  DateTime  @default(now())
+  startedAt  DateTime?
+  finishedAt DateTime?
+  video      Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+}
+
+model Advertisement {
+  id        String   @id @default(cuid())
+  name      String
+  type      AdType
+  status    AdStatus @default(PAUSED)
+  mediaUrl  String
+  targetUrl String?
+  startAt   DateTime?
+  endAt     DateTime?
+  impressions BigInt @default(0)
+  clicks    BigInt   @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  readAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+  actor     User?    @relation("ActorAudit", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
