@@ -21,6 +21,6 @@ jobs:
         with:
           version: 10.4.1
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: pnpm install --no-frozen-lockfile
       - name: Build static web app
         run: pnpm --filter @vaultstream/web build
