@@ -5,22 +5,46 @@ import Hls from "hls.js";
 
 function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionSec:number)=>void }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [playbackError, setPlaybackError] = useState("");
 
   useEffect(() => {
     const video = ref.current;
-    if (!video || !src) return;
+    if (!video) return;
+    setPlaybackError("");
+    if (!src) {
+      setPlaybackError("Video stream URL is missing.");
+      return;
+    }
 
     if (!src.includes(".m3u8") || video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = src;
-      return;
+      const onError = () => setPlaybackError("Video could not be decoded. Please try again.");
+      video.addEventListener("error", onError);
+      return () => video.removeEventListener("error", onError);
     }
 
     if (!Hls.isSupported()) {
       video.src = src;
-      return;
+      const onError = () => setPlaybackError("This browser does not support HLS playback.");
+      video.addEventListener("error", onError);
+      return () => video.removeEventListener("error", onError);
     }
 
-    const hls = new Hls({ enableWorker: true });
+    const hls = new Hls({ enableWorker: true, maxBufferLength: 30 });
+    hls.on(Hls.Events.ERROR, (_event, data) => {
+      if (!data.fatal) return;
+      if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+        hls.startLoad();
+        return;
+      }
+      if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+        hls.recoverMediaError();
+        return;
+      }
+      setPlaybackError(`Playback failed: ${data.details}. Reload the page and try again.`);
+      hls.destroy();
+    });
+    hls.on(Hls.Events.MANIFEST_PARSED, () => setPlaybackError(""));
     hls.loadSource(src);
     hls.attachMedia(video);
     return () => hls.destroy();
@@ -35,7 +59,10 @@ function VideoPlayer({ src, onView }: { src?: string | null; onView?: (positionS
     return () => video.removeEventListener("play", handlePlay);
   }, [src, onView]);
 
-  return <video ref={ref} controls preload="metadata" className="h-full w-full object-cover" />;
+  return <div className="relative h-full w-full">
+    <video ref={ref} controls playsInline preload="metadata" className="h-full w-full object-contain" />
+    {playbackError && <div role="status" className="absolute inset-x-2 bottom-12 rounded-lg bg-black/85 p-3 text-sm text-white">{playbackError}</div>}
+  </div>;
 }
 
 type Video = { id:string; title:string; description?:string; views:string|number; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; };
