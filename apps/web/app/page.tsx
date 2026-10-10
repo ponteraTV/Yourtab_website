@@ -114,7 +114,7 @@ export default function HomePage() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link href="/" className="text-2xl font-black tracking-tight">Your<span className="text-cyan-400">Tab</span></Link>
         <div className="flex items-center gap-3">
-          {user ? <><span className="hidden text-sm text-gray-300 sm:block">Hi, {user.name}</span><button className="glass-button" onClick={logout}>Logout</button></> :
+          {user ? <><Link href="/profile" className="hidden text-sm text-gray-300 hover:text-cyan-300 sm:block" aria-label="Open your profile">Hi, {user.name}</Link><Link href="/profile" className="glass-button sm:hidden">Profile</Link><button className="glass-button" onClick={logout}>Logout</button></> :
           <><Link href="/login" className="glass-button">Login</Link><Link href="/register" className="glass-button border-cyan-300/30 bg-cyan-400/15">Sign up</Link></>}
         </div>
       </div>
