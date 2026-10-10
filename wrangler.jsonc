@@ -1,9 +1,12 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "yourtab",
+  "name": "yourtab-website",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-10-07",
   "previews": {},
+  "vars": {
+    "API_ORIGIN": "https://api.143-198-191-75.sslip.io"
+  },
   "build": {
     "command": "pnpm --filter @vaultstream/web build"
   },
