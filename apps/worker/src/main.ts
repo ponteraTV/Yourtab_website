@@ -76,7 +76,7 @@ async function processVideo(videoId: string) {
         const percent = Math.max(0, Math.min(99, Math.floor((timeMicroseconds / 1_000_000 / durationSec) * 100)));
         if (percent > lastProgress) {
           lastProgress = percent;
-          progressWrite = progressWrite.then(() => prisma.videoJob.update({ where: { id: job.id }, data: { progress: percent } })).catch(error => console.error("Could not save video progress", error));
+          progressWrite = progressWrite.then(async () => { await prisma.videoJob.update({ where: { id: job.id }, data: { progress: percent } }); }).catch(error => { console.error("Could not save video progress", error); });
         }
       }
     };
