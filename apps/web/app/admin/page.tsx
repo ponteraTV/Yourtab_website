@@ -228,7 +228,7 @@ export default function AdminPage() {
     },
   ];
   const sections = menuGroups.flatMap((group) => group.items);
-  const availableSections = ["dashboard", "upload", "videos", "users"];
+  const availableSections = ["dashboard", "videos", "users", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
@@ -258,7 +258,7 @@ export default function AdminPage() {
                       <button
                         key={section.id}
                         type="button"
-                        onClick={() => setActiveSection(section.id)}
+                        onClick={() => section.id === "profile" ? window.location.assign("/profile") : setActiveSection(section.id)}
                         aria-current={active ? "page" : undefined}
                         className={"flex w-full min-w-0 items-start gap-1.5 rounded-lg px-1.5 py-2 text-left text-[11px] leading-tight transition sm:items-center sm:gap-2 sm:rounded-xl sm:px-3 sm:py-3 sm:text-sm " +
                           (active ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30 " : "text-gray-300 hover:bg-white/5 ") +
@@ -302,11 +302,13 @@ export default function AdminPage() {
           {activeSection === "upload" && (
             <section className="glass-panel rounded-3xl p-5 sm:p-6">
               <h2 className="text-2xl font-bold">Video upload</h2>
-              <p className="mt-2 text-sm text-gray-400">Upload directly to storage; the worker creates HLS. Keep this page open until upload finishes.</p>
-              <label className={"mt-6 inline-flex glass-button cursor-pointer " + (upload ? "pointer-events-none opacity-50" : "")}>
-                <input disabled={upload} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.mpeg,.mpg,.3gp" className="hidden" onChange={file} />
-                {upload ? "Uploading…" : "Choose video"}
-              </label>
+              {me.role === "ADMIN" ? <>
+                <p className="mt-2 text-sm text-gray-400">Upload directly to storage; the worker creates HLS. Keep this page open until upload finishes.</p>
+                <label className={"mt-6 inline-flex glass-button cursor-pointer " + (upload ? "pointer-events-none opacity-50" : "")}>
+                  <input disabled={upload} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.mpeg,.mpg,.3gp" className="hidden" onChange={file} />
+                  {upload ? "Uploading…" : "Choose video"}
+                </label>
+              </> : <p className="mt-2 text-sm text-amber-200">Only an ADMIN account can upload videos. Your role is {me.role}.</p>}
             </section>
           )}
 
