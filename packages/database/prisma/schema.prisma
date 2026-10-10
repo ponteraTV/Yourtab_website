@@ -121,6 +121,7 @@ model Video {
   likes          VideoLike[]
   history        WatchHistory[]
   processingJobs VideoJob[]
+  captions       VideoCaption[]
   playlistItems  PlaylistItem[]
 
   @@index([status, visibility, publishedAt])
@@ -193,6 +194,7 @@ model VideoJob {
   id         String    @id @default(cuid())
   videoId    String
   status     JobStatus @default(QUEUED)
+  progress   Int       @default(0)
   attempts   Int       @default(0)
   error      String?
   createdAt  DateTime  @default(now())
@@ -201,6 +203,19 @@ model VideoJob {
   video      Video     @relation(fields: [videoId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
+}
+
+model VideoCaption {
+  id         String   @id @default(cuid())
+  videoId    String
+  language   String   @default("en")
+  label      String
+  format     String   @default("vtt")
+  storageKey String   @unique
+  createdAt  DateTime @default(now())
+  video      Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId, language])
 }
 
 model Advertisement {
