@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { ChangeEvent } from "react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
@@ -235,7 +236,7 @@ export default function AdminPage() {
         <div>
           <p className="text-cyan-300 text-xs uppercase tracking-[.25em]">Control center</p>
           <h1 className="text-3xl font-black sm:text-4xl">YourTab Admin</h1>
-          <p className="mt-2 text-sm text-gray-400">{me.email} · {me.role}</p>
+          <Link href="/profile" className="mt-2 inline-block text-sm text-gray-400 hover:text-cyan-300" aria-label="Open admin profile">{me.name || me.email} · {me.role} · Profile</Link>
         </div>
         <a href="/" className="glass-button">View website</a>
       </div>
