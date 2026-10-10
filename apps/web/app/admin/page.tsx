@@ -17,6 +17,28 @@ async function api(path: string, options: RequestInit = {}) {
   return j.data;
 }
 
+function putWithProgress(url: string, body: Blob, contentType: string, onProgress: (percent: number) => void) {
+  return new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("PUT", url);
+    xhr.setRequestHeader("Content-Type", contentType);
+    xhr.upload.onprogress = event => { if (event.lengthComputable) onProgress(Math.min(100, Math.floor((event.loaded / event.total) * 100))); };
+    xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error("Storage upload failed (HTTP " + xhr.status + "). Check Spaces CORS and the signed Content-Type."));
+    xhr.onerror = () => reject(new Error("Could not reach DigitalOcean Spaces. Bucket CORS must allow this website origin, PUT, and Content-Type."));
+    xhr.onabort = () => reject(new Error("Upload was cancelled."));
+    xhr.send(body);
+  });
+}
+
+async function captionAsVtt(file: File): Promise<Blob> {
+  const text = await file.text();
+  if (/^\s*WEBVTT(?:\s|$)/.test(text)) return new Blob([text], { type: "text/vtt" });
+  if (!/\.srt$/i.test(file.name)) throw new Error("Captions must be a WebVTT (.vtt) or SubRip (.srt) file.");
+  const body = text.replace(/^\uFEFF/, "").replace(/\r/g, "").replace(/(\d{2}:\d{2}:\d{2}),(\d{3})(\s*-->\s*\d{2}:\d{2}:\d{2}),(\d{3})/g, "$1.$2 --> $3.$4");
+  if (!/\d{2}:\d{2}:\d{2}\.\d{3}\s*-->\s*\d{2}:\d{2}:\d{2}\.\d{3}/.test(body)) throw new Error("The SRT caption file has no valid timestamp cues.");
+  return new Blob(["WEBVTT\n\n" + body.trim() + "\n"], { type: "text/vtt" });
+}
+
 export default function AdminPage() {
   const [me, setMe] = useState<any>(null);
   const [stats, setStats] = useState<any>();
@@ -24,6 +46,13 @@ export default function AdminPage() {
   const [videos, setVideos] = useState<any[]>([]);
   const [msg, setMsg] = useState("");
   const [upload, setUpload] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoDescription, setVideoDescription] = useState("");
+  const [captionFile, setCaptionFile] = useState<File | null>(null);
+  const [captionLanguage, setCaptionLanguage] = useState("en");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStage, setUploadStage] = useState("");
   const [loading, setLoading] = useState(true);
   const [denied, setDenied] = useState(false);
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -57,59 +86,56 @@ export default function AdminPage() {
     load();
   }, []);
 
-  async function file(e: ChangeEvent<HTMLInputElement>) {
+  useEffect(() => {
+    if (!me || !["videos", "upload"].includes(activeSection)) return;
+    const timer = window.setInterval(async () => { try { setVideos(await api("/v1/admin/videos")); } catch { /* retain last known state */ } }, 4000);
+    return () => window.clearInterval(timer);
+  }, [activeSection, me]);
+
+  function selectVideo(e: ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
     e.target.value = "";
-    if (!f || !me) return;
-    const title = f.name.replace(/\.[^.]+$/, "");
-    // Some browsers report an empty File.type for valid video files.
-    // Keep the signed Content-Type identical between presign and PUT.
+    if (!f) return;
     const extension = f.name.split(".").pop()?.toLowerCase() || "";
-    const knownVideoTypes: Record<string, string> = {
-      mp4: "video/mp4",
-      m4v: "video/x-m4v",
-      mov: "video/quicktime",
-      webm: "video/webm",
-      mkv: "video/x-matroska",
-      avi: "video/x-msvideo",
-      mpg: "video/mpeg",
-      mpeg: "video/mpeg",
-      "3gp": "video/3gpp",
-    };
-    const contentType = f.type.startsWith("video/") ? f.type : knownVideoTypes[extension];
-    if (!contentType) {
-      setMsg("Unsupported video type. Please choose MP4, MOV, WebM, MKV, AVI, MPEG, or 3GP.");
-      return;
-    }
-    setUpload(true);
-    setMsg("Uploading and queueing video…");
-    try {
-      const p = await api("/v1/uploads/presign", {
-        method: "POST",
-        body: JSON.stringify({ filename: f.name, contentType }),
-      });
-      const put = await fetch(p.url, {
-        method: "PUT",
-        headers: { "Content-Type": contentType },
-        body: f,
-      });
-      if (!put.ok) {
-        const detail = await put.text().catch(() => "");
-        throw new Error(detail || "Storage upload failed. Check storage URL/CORS.");
-      }
-      await api("/v1/videos", {
-        method: "POST",
-        body: JSON.stringify({ title, sourceKey: p.key }),
-      });
-      setMsg("Video uploaded and queued. Worker will transcode it to HLS.");
-      await load();
-    } catch (e: any) {
-      setMsg(e.message || "Video upload failed");
-    } finally {
-      setUpload(false);
-    }
+    const types: Record<string, string> = { mp4: "video/mp4", m4v: "video/x-m4v", mov: "video/quicktime", webm: "video/webm", mkv: "video/x-matroska", avi: "video/x-msvideo", mpg: "video/mpeg", mpeg: "video/mpeg", "3gp": "video/3gpp" };
+    if (!(f.type.startsWith("video/") || types[extension])) { setMsg("Unsupported video type. Choose MP4, MOV, WebM, MKV, AVI, MPEG, or 3GP."); setSelectedVideo(null); return; }
+    setSelectedVideo(f);
+    setVideoTitle(f.name.replace(/\.[^.]+$/, ""));
+    setMsg("");
   }
 
+  async function startUpload() {
+    const f = selectedVideo;
+    if (!f || !me || upload) return;
+    const extension = f.name.split(".").pop()?.toLowerCase() || "";
+    const types: Record<string, string> = { mp4: "video/mp4", m4v: "video/x-m4v", mov: "video/quicktime", webm: "video/webm", mkv: "video/x-matroska", avi: "video/x-msvideo", mpg: "video/mpeg", mpeg: "video/mpeg", "3gp": "video/3gpp" };
+    const contentType = f.type.startsWith("video/") ? f.type : types[extension];
+    if (!contentType) { setMsg("Unsupported video type."); return; }
+    if (!videoTitle.trim()) { setMsg("Please enter a video title."); return; }
+    setUpload(true); setUploadProgress(0); setUploadStage("Preparing video upload"); setMsg("");
+    try {
+      const p = await api("/v1/uploads/presign", { method: "POST", body: JSON.stringify({ filename: f.name, contentType }) });
+      setUploadStage("Uploading video");
+      await putWithProgress(p.url, f, contentType, setUploadProgress);
+      const captions: Array<{ key: string; language: string; label: string }> = [];
+      if (captionFile) {
+        setUploadProgress(0); setUploadStage("Preparing captions");
+        const vtt = await captionAsVtt(captionFile);
+        const cp = await api("/v1/uploads/caption-presign", { method: "POST", body: JSON.stringify({ filename: captionFile.name, contentType: "text/vtt" }) });
+        setUploadStage("Uploading captions");
+        await putWithProgress(cp.url, vtt, "text/vtt", setUploadProgress);
+        const language = captionLanguage.trim() || "en";
+        captions.push({ key: cp.key, language, label: language.toUpperCase() });
+      }
+      setUploadProgress(100); setUploadStage("Saving video and queueing processing");
+      await api("/v1/videos", { method: "POST", body: JSON.stringify({ title: videoTitle.trim(), description: videoDescription.trim(), sourceKey: p.key, captions }) });
+      setMsg("Upload complete. Processing started; Video Management shows the actual processing percentage.");
+      setSelectedVideo(null); setVideoTitle(""); setVideoDescription(""); setCaptionFile(null); setCaptionLanguage("en"); setUploadProgress(0);
+      await load();
+    } catch (e: any) {
+      setMsg(e.message || "Video upload failed. Check the API and Spaces upload response.");
+    } finally { setUpload(false); setUploadStage(""); }
+  }
   async function user(id: string, status: string, role: string) {
     try {
       await api("/v1/admin/users/" + id, {
@@ -305,9 +331,18 @@ export default function AdminPage() {
               {me.role === "ADMIN" ? <>
                 <p className="mt-2 text-sm text-gray-400">Upload directly to storage; the worker creates HLS. Keep this page open until upload finishes.</p>
                 <label className={"mt-6 inline-flex glass-button cursor-pointer " + (upload ? "pointer-events-none opacity-50" : "")}>
-                  <input disabled={upload} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.mpeg,.mpg,.3gp" className="hidden" onChange={file} />
-                  {upload ? "Uploading…" : "Choose video"}
+                  <input disabled={upload} type="file" accept="video/*,.mp4,.mov,.webm,.mkv,.avi,.mpeg,.mpg,.3gp" className="hidden" onChange={selectVideo} />
+                  {selectedVideo ? "Choose a different video" : "Choose video"}
                 </label>
+                {selectedVideo && <div className="mt-5 grid gap-4">
+                  <p className="break-all text-sm text-gray-300">{selectedVideo.name} · {(selectedVideo.size / (1024 * 1024)).toFixed(1)} MB</p>
+                  <label className="grid gap-2 text-sm text-gray-300">Video title<input value={videoTitle} onChange={e => setVideoTitle(e.target.value)} maxLength={160} className="glass-input rounded-xl p-3 text-white" placeholder="Enter video title" /></label>
+                  <label className="grid gap-2 text-sm text-gray-300">Description<textarea value={videoDescription} onChange={e => setVideoDescription(e.target.value)} maxLength={5000} rows={3} className="glass-input rounded-xl p-3 text-white" placeholder="Add a video description (optional)" /></label>
+                  <label className="grid gap-2 text-sm text-gray-300">Captions / subtitles (.vtt or .srt)<input disabled={upload} type="file" accept=".vtt,.srt,text/vtt,application/x-subrip" onChange={e => setCaptionFile(e.target.files?.[0] || null)} className="block w-full text-sm" /></label>
+                  {captionFile && <label className="grid gap-2 text-sm text-gray-300">Caption language (e.g. en, bn, en-US)<input value={captionLanguage} onChange={e => setCaptionLanguage(e.target.value)} maxLength={12} className="glass-input rounded-xl p-3 text-white" /></label>}
+                  {upload && <div className="grid gap-2" role="status" aria-live="polite"><div className="flex justify-between gap-3 text-sm"><span>{uploadStage}</span><span>{uploadProgress}%</span></div><progress className="w-full" max={100} value={uploadProgress} /></div>}
+                  <button type="button" disabled={upload} onClick={startUpload} className="glass-button w-fit disabled:opacity-50">{upload ? "Working…" : "Upload video"}</button>
+                </div>}
               </> : <p className="mt-2 text-sm text-amber-200">Only an ADMIN account can upload videos. Your role is {me.role}.</p>}
             </section>
           )}
@@ -322,7 +357,7 @@ export default function AdminPage() {
                   {videos.map(v => (
                     <tr key={v.id} className="border-b border-white/5">
                       <td className="p-3">{v.title}</td>
-                      <td className="p-3">{v.status}</td>
+                      <td className="p-3">{v.status}{(v.processingJobs || []).some((j: any) => j.status === "PROCESSING" || j.status === "QUEUED") && <div className="mt-1 text-xs text-cyan-300">{v.processingJobs.find((j: any) => j.status === "PROCESSING") ? ("Processing " + (v.processingJobs.find((j: any) => j.status === "PROCESSING")?.progress ?? 0) + "%") : "Queued for processing"}</div>}</td>
                       <td className="p-3">{Number(v.views)}</td>
                       <td className="p-3">
                         {v.status === "PROCESSING" && <span className="text-xs text-gray-500">Processing…</span>}
