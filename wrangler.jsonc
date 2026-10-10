@@ -3,6 +3,9 @@
   "name": "yourtab",
   "main": "./src/worker.ts",
   "compatibility_date": "2026-10-07",
+  "vars": {
+    "API_ORIGIN": "https://api.143-198-191-75.sslip.io"
+  },
   "previews": {},
   "build": {
     "command": "pnpm --filter @vaultstream/web build"
