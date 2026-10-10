@@ -36,7 +36,10 @@ async function bootstrap() {
   );
 
   app.enableCors({
-    origin: (origin, callback) => {
+    origin: (
+      origin: string | undefined,
+      callback: (error: Error | null, allow?: boolean) => void,
+    ) => {
       // Requests without an Origin header (e.g. server-to-server health checks)
       // are not browser CORS requests and should remain allowed.
       if (!origin || allowedOrigins.has(origin)) {
