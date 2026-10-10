@@ -163,16 +163,70 @@ export default function AdminPage() {
     );
   }
 
-  const sections = [
-    { id: "dashboard", label: "Dashboard", icon: "▦" },
-    { id: "upload", label: "Video Upload", icon: "↑" },
-    { id: "videos", label: "Video Management", icon: "▶" },
-    { id: "users", label: "User Management", icon: "♙" },
-    { id: "ads", label: "Advertisements", icon: "▣" },
-    { id: "analytics", label: "Analytics", icon: "↗" },
-    { id: "website", label: "Website Editor", icon: "✎" },
-    { id: "settings", label: "Settings", icon: "⚙" },
+  // Keep the existing working sections intact. The additional entries restore
+  // the planned navigation only; unfinished features remain clearly marked.
+  const menuGroups = [
+    {
+      label: "OVERVIEW",
+      items: [{ id: "dashboard", label: "Dashboard", icon: "▦" }],
+    },
+    {
+      label: "CONTENT",
+      items: [
+        { id: "upload", label: "Video Upload", icon: "↑" },
+        { id: "videos", label: "Video Management", icon: "▶" },
+        { id: "categories", label: "Categories", icon: "▤" },
+        { id: "tags", label: "Tags", icon: "#" },
+        { id: "playlists", label: "Playlists", icon: "☷" },
+        { id: "pages", label: "Pages & Posts", icon: "▧" },
+        { id: "comments", label: "Comments", icon: "☏" },
+      ],
+    },
+    {
+      label: "USERS & ACCESS",
+      items: [
+        { id: "users", label: "User Management", icon: "♙" },
+        { id: "roles", label: "Roles & Permissions", icon: "⚿" },
+      ],
+    },
+    {
+      label: "MONETIZATION",
+      items: [
+        { id: "ads", label: "Advertisements", icon: "▣" },
+        { id: "subscriptions", label: "Subscriptions", icon: "▱" },
+        { id: "revenue", label: "Revenue Reports", icon: "$" },
+      ],
+    },
+    {
+      label: "INSIGHTS",
+      items: [{ id: "analytics", label: "Analytics", icon: "↗" }],
+    },
+    {
+      label: "WEBSITE",
+      items: [
+        { id: "website", label: "Website Editor", icon: "✎" },
+        { id: "navigation", label: "Site Navigation", icon: "☰" },
+        { id: "theme", label: "Theme & Branding", icon: "◐" },
+      ],
+    },
+    {
+      label: "STORAGE & PROCESSING",
+      items: [
+        { id: "storage", label: "Storage & CDN", icon: "▣" },
+        { id: "processing", label: "Processing Queue", icon: "⟳" },
+      ],
+    },
+    {
+      label: "SYSTEM",
+      items: [
+        { id: "notifications", label: "Notifications", icon: "♢" },
+        { id: "audit", label: "Audit Logs", icon: "≡" },
+        { id: "settings", label: "System Settings", icon: "⚙" },
+        { id: "profile", label: "Admin Profile", icon: "♙" },
+      ],
+    },
   ];
+  const sections = menuGroups.flatMap((group) => group.items);
   const availableSections = ["dashboard", "upload", "videos", "users"];
 
   return (
@@ -191,26 +245,33 @@ export default function AdminPage() {
       <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
         <aside className="glass-panel h-fit rounded-2xl p-3">
           <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Admin menu</p>
-          <nav aria-label="Admin sections" className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
-            {sections.map((section) => {
-              const active = activeSection === section.id;
-              const available = availableSections.includes(section.id);
-              return (
-                <button
-                  key={section.id}
-                  type="button"
-                  onClick={() => setActiveSection(section.id)}
-                  aria-current={active ? "page" : undefined}
-                  className={"flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition " +
-                    (active ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30 " : "text-gray-300 hover:bg-white/5 ") +
-                    (!available ? "opacity-80 " : "")}
-                >
-                  <span aria-hidden="true" className="w-5 text-center text-base">{section.icon}</span>
-                  <span>{section.label}</span>
-                  {!available && <span className="ml-auto hidden rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-gray-400 xl:inline">Planned</span>}
-                </button>
-              );
-            })}
+          <nav aria-label="Admin sections" className="flex flex-col gap-3">
+            {menuGroups.map((group) => (
+              <div key={group.label} className="min-w-0">
+                <p className="px-3 pb-1 text-[10px] font-bold tracking-[.16em] text-gray-500">{group.label}</p>
+                <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+                  {group.items.map((section) => {
+                    const active = activeSection === section.id;
+                    const available = availableSections.includes(section.id);
+                    return (
+                      <button
+                        key={section.id}
+                        type="button"
+                        onClick={() => setActiveSection(section.id)}
+                        aria-current={active ? "page" : undefined}
+                        className={"flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition " +
+                          (active ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30 " : "text-gray-300 hover:bg-white/5 ") +
+                          (!available ? "opacity-80 " : "")}
+                      >
+                        <span aria-hidden="true" className="w-5 text-center text-base">{section.icon}</span>
+                        <span>{section.label}</span>
+                        {!available && <span className="ml-auto hidden rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-gray-400 xl:inline">Planned</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </nav>
         </aside>
 
