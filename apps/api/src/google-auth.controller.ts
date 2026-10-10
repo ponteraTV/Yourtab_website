@@ -43,7 +43,7 @@ export class GoogleAuthController {
     if (user.status !== "ACTIVE") throw new UnauthorizedException("This account is not active");
     await prisma.user.update({ where: { id: user.id }, data: { lastLoginAt: new Date() } });
     response.cookie(cookieName, await signAccessToken({ id: user.id, email: user.email, role: user.role }), {
-      httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production",
+      httpOnly: true, sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", secure: process.env.NODE_ENV === "production",
       maxAge: 15 * 60 * 1000, path: "/",
     });
     return { data: { id: user.id, email: user.email, name: user.name, role: user.role } };
