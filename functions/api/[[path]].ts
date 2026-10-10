@@ -28,6 +28,24 @@ export const onRequest = async (context: {
     });
 
     const responseHeaders = new Headers(upstream.headers);
+
+    // Preserve each Set-Cookie header explicitly. Authentication relies on the
+    // API's HttpOnly session cookie surviving the Pages proxy response.
+    const setCookies = typeof upstream.headers.getSetCookie === "function"
+      ? upstream.headers.getSetCookie()
+      : [];
+    if (setCookies.length > 0) {
+      responseHeaders.delete("Set-Cookie");
+      for (const cookie of setCookies) {
+        responseHeaders.append("Set-Cookie", cookie);
+      }
+    }
+
+    // Authentication responses must not be cached by an intermediary.
+    if (incoming.pathname.startsWith("/api/v1/auth/")) {
+      responseHeaders.set("Cache-Control", "no-store");
+    }
+
     responseHeaders.set("X-Content-Type-Options", "nosniff");
     responseHeaders.set("Referrer-Policy", "origin-when-cross-origin");
 
