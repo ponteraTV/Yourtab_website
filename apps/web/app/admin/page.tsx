@@ -230,7 +230,7 @@ export default function AdminPage() {
   const availableSections = ["dashboard", "upload", "videos", "users"];
 
   return (
-    <main className="mx-auto min-h-screen max-w-7xl px-4 py-5 sm:px-6 sm:py-8">
+    <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-cyan-300 text-xs uppercase tracking-[.25em]">Control center</p>
@@ -242,14 +242,14 @@ export default function AdminPage() {
 
       {msg && <div className="mb-5 rounded-2xl border border-white/10 bg-white/5 p-4 text-sm" role="status">{msg}</div>}
 
-      <div className="grid gap-5 lg:grid-cols-[240px_minmax(0,1fr)]">
-        <aside className="glass-panel h-fit rounded-2xl p-3">
-          <p className="px-3 pb-2 pt-1 text-xs font-semibold uppercase tracking-wider text-gray-500">Admin menu</p>
-          <nav aria-label="Admin sections" className="flex flex-col gap-3">
+      <div className="grid grid-cols-[132px_minmax(0,1fr)] items-start gap-2 sm:grid-cols-[190px_minmax(0,1fr)] sm:gap-4 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-5">
+        <aside className="glass-panel sticky top-2 max-h-[calc(100vh-1rem)] min-w-0 overflow-y-auto rounded-xl p-1.5 sm:rounded-2xl sm:p-3">
+          <p className="px-1 pb-2 pt-1 text-[10px] font-semibold uppercase tracking-wide text-gray-500 sm:px-3 sm:text-xs sm:tracking-wider">Admin menu</p>
+          <nav aria-label="Admin sections" className="flex flex-col gap-2 sm:gap-3">
             {menuGroups.map((group) => (
               <div key={group.label} className="min-w-0">
-                <p className="px-3 pb-1 text-[10px] font-bold tracking-[.16em] text-gray-500">{group.label}</p>
-                <div className="flex gap-2 overflow-x-auto lg:flex-col lg:overflow-visible">
+                <p className="break-words px-1 pb-1 text-[8px] font-bold tracking-normal text-gray-500 sm:px-3 sm:text-[10px] sm:tracking-[.16em]">{group.label}</p>
+                <div className="flex min-w-0 flex-col gap-1">
                   {group.items.map((section) => {
                     const active = activeSection === section.id;
                     const available = availableSections.includes(section.id);
@@ -259,12 +259,12 @@ export default function AdminPage() {
                         type="button"
                         onClick={() => setActiveSection(section.id)}
                         aria-current={active ? "page" : undefined}
-                        className={"flex shrink-0 items-center gap-3 rounded-xl px-3 py-3 text-left text-sm transition " +
+                        className={"flex w-full min-w-0 items-start gap-1.5 rounded-lg px-1.5 py-2 text-left text-[11px] leading-tight transition sm:items-center sm:gap-2 sm:rounded-xl sm:px-3 sm:py-3 sm:text-sm " +
                           (active ? "bg-cyan-400/15 text-cyan-200 ring-1 ring-cyan-300/30 " : "text-gray-300 hover:bg-white/5 ") +
                           (!available ? "opacity-80 " : "")}
                       >
-                        <span aria-hidden="true" className="w-5 text-center text-base">{section.icon}</span>
-                        <span>{section.label}</span>
+                        <span aria-hidden="true" className="w-4 shrink-0 text-center text-sm sm:w-5 sm:text-base">{section.icon}</span>
+                        <span className="min-w-0 break-words">{section.label}</span>
                         {!available && <span className="ml-auto hidden rounded-full bg-white/10 px-2 py-0.5 text-[10px] text-gray-400 xl:inline">Planned</span>}
                       </button>
                     );
