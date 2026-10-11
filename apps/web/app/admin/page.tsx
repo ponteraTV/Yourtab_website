@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ChangeEvent } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "/api";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+// Cloudflare Pages is a static frontend; API calls must target the deployed API host, not Pages /api.
+const API = configuredApiUrl && /^https?:\/\//i.test(configuredApiUrl)
+  ? configuredApiUrl.replace(/\/+$/, "")
+  : "https://api.143-198-191-75.sslip.io/api";
 
 async function api(path: string, options: RequestInit = {}) {
   const r = await fetch(API + path, {
