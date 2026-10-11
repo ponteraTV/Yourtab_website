@@ -3,7 +3,11 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "/api";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+// Cloudflare Pages is a static frontend; API calls must target the deployed API host, not Pages /api.
+const API = configuredApiUrl && /^https?:\/\//i.test(configuredApiUrl)
+  ? configuredApiUrl.replace(/\/+$/, "")
+  : "https://api.143-198-191-75.sslip.io/api";
 declare global {
   interface Window {
     google?: {
