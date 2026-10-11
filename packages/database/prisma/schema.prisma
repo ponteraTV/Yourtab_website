@@ -223,7 +223,9 @@ model Advertisement {
   name      String
   type      AdType
   status    AdStatus @default(PAUSED)
-  mediaUrl  String
+  provider  String   @default("DIRECT")
+  mediaUrl  String?
+  embedCode String?  @db.Text
   targetUrl String?
   startAt   DateTime?
   endAt     DateTime?
