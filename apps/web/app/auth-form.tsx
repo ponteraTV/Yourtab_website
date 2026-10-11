@@ -3,11 +3,10 @@
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-// Cloudflare Pages is a static frontend; API calls must target the deployed API host, not Pages /api.
-const API = configuredApiUrl && /^https?:\/\//i.test(configuredApiUrl)
-  ? configuredApiUrl.replace(/\/+$/, "")
-  : "https://api.143-198-191-75.sslip.io/api";
+// Use same-origin /api proxy instead of hardcoded backend URL.
+// Cloudflare Pages Function forwards /api/* to the backend.
+const API = "/api";
+
 declare global {
   interface Window {
     google?: {
@@ -118,7 +117,7 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           <div>
             <p className="mb-4 text-xs font-bold uppercase tracking-[0.28em] text-cyan-200">Your world of video</p>
             <h1 className="text-5xl font-black leading-[1.08]">{mode === "login" ? "Welcome back to your next watch." : "Your next favorite video starts here."}</h1>
-            <p className="mt-5 max-w-sm leading-7 text-slate-300">{mode === "login" ? "Sign in to continue watching and manage your video library." : "Create your free account to watch, upload, and keep your videos in one place."}</p>
+            <p className="mt-5 max-w-sm leading-7 text-slate-300">{mode === "login" ? "Sign in to continue watching and manage your video library." : "Create your free account to watch, upload, and share videos."}</p>
           </div>
           <p className="text-sm text-slate-500">Watch. Upload. Share.</p>
         </section>
@@ -127,13 +126,13 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           <div className="mt-6 md:mt-3">
             <p className="text-sm font-semibold text-cyan-300">{mode === "login" ? "GOOD TO SEE YOU AGAIN" : "GET STARTED FOR FREE"}</p>
             <h2 className="mt-2 text-3xl font-black tracking-tight">{mode === "login" ? "Sign in" : "Create your account"}</h2>
-            <p className="mt-2 text-sm text-slate-400">{mode === "login" ? "Enter your details to access YourTab." : "A few details and you’re ready to go."}</p>
+            <p className="mt-2 text-sm text-slate-400">{mode === "login" ? "Enter your details to access YourTab." : "A few details and you're ready to go."}</p>
           </div>
           <div className="mt-7 flex justify-center">
             {googleClientId ? (
               <div id="google-signin-button" className="min-h-10" aria-label="Continue with Google" />
             ) : (
-              <button type="button" disabled className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-full border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-neutral-700 opacity-80" title="Google OAuth needs configuration">
+              <button type="button" disabled className="flex w-full cursor-not-allowed items-center justify-center gap-3 rounded-full border border-white/15 bg-white px-4 py-3 text-sm font-semibold text-neutral-950 opacity-50">
                 <span className="text-base font-black">G</span> Continue with Google
               </button>
             )}
@@ -142,13 +141,13 @@ export default function AuthForm({ mode }: { mode: "login" | "register" }) {
           {googleReady && <span className="sr-only">Google sign-in is ready</span>}
           <div className="my-6 flex items-center gap-3 text-xs text-slate-500"><span className="h-px flex-1 bg-white/10" />OR CONTINUE WITH EMAIL<span className="h-px flex-1 bg-white/10" /></div>
           <form onSubmit={submit} className="space-y-4">
-            {mode === "register" && <label className="block text-sm font-medium text-slate-300">Full name<input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/10" /></label>}
-            <label className="block text-sm font-medium text-slate-300">Email address<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@example.com" className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/10" /></label>
-            <label className="block text-sm font-medium text-slate-300">Password<input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" className="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3.5 text-white outline-none transition focus:border-cyan-300/60 focus:ring-2 focus:ring-cyan-300/10" /></label>
+            {mode === "register" && <label className="block text-sm font-medium text-slate-300">Full name<input required autoComplete="name" value={name} onChange={e => setName(e.target.value)} placeholder="Your full name" className="mt-1 block w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20" /></label>}
+            <label className="block text-sm font-medium text-slate-300">Email address<input required type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" className="mt-1 block w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20" /></label>
+            <label className="block text-sm font-medium text-slate-300">Password<input required minLength={8} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} value={password} onChange={e => setPassword(e.target.value)} placeholder="At least 8 characters" className="mt-1 block w-full rounded-lg border border-white/15 bg-white/5 px-4 py-2.5 text-white placeholder-slate-500 transition focus:border-cyan-400 focus:outline-none focus:ring-2 focus:ring-cyan-400/20" /></label>
             {error && <p role="alert" className="rounded-xl border border-red-400/20 bg-red-400/10 px-3 py-2 text-sm text-red-200">{error}</p>}
-            <button disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-cyan-300 to-sky-400 px-4 py-3.5 font-bold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60">{busy ? "Please wait…" : mode === "login" ? "Sign in" : "Create account"}</button>
+            <button disabled={busy} className="w-full rounded-xl bg-gradient-to-r from-cyan-300 to-sky-400 px-4 py-3.5 font-bold text-slate-950 shadow-lg shadow-cyan-950/30 transition hover:brightness-110 disabled:opacity-50">{busy ? (mode === "login" ? "Signing in..." : "Creating account...") : (mode === "login" ? "Sign in" : "Create account")}</button>
           </form>
-          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to YourTab?" : "Already have an account?"}{" "}<Link className="font-semibold text-cyan-300 hover:text-cyan-200" href={mode === "login" ? "/register" : "/login"}>{mode === "login" ? "Create an account" : "Sign in"}</Link></p>
+          <p className="mt-6 text-center text-sm text-slate-400">{mode === "login" ? "New to YourTab?" : "Already have an account?"}{" "}<Link className="font-semibold text-cyan-300 hover:text-cyan-200" href={mode === "login" ? "/register" : "/login"}>{mode === "login" ? "Sign up" : "Sign in"}</Link></p>
           <p className="mt-8 text-center text-xs text-slate-600">By continuing, you agree to use YourTab responsibly.</p>
         </section>
       </div>
