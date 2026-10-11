@@ -47,6 +47,8 @@ export default function AdminPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
   const [ads, setAds] = useState<any[]>([]);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const [auditSearch, setAuditSearch] = useState("");
   const [adName, setAdName] = useState("");
   const [adType, setAdType] = useState("BANNER");
   const [adMediaUrl, setAdMediaUrl] = useState("");
@@ -93,6 +95,7 @@ export default function AdminPage() {
       setCategories(await api("/v1/admin/categories"));
       setTags(await api("/v1/admin/tags"));
       setAds(await api("/v1/admin/ads"));
+      setAuditLogs(await api("/v1/admin/audit"));
       setMsg("");
     } catch (e: any) {
       setMe(null);
@@ -336,7 +339,7 @@ export default function AdminPage() {
     },
   ];
   const sections = menuGroups.flatMap((group) => group.items);
-  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "ads", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
+  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "ads", "audit", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
@@ -547,6 +550,31 @@ export default function AdminPage() {
                   </div>
                 </article>)}
                 {ads.length === 0 && <p className="text-sm text-gray-400">No advertisements yet. Create your first campaign above.</p>}
+              </div>
+            </section>
+          )}
+
+          {activeSection === "audit" && (
+            <section className="glass-panel rounded-3xl p-5 sm:p-6">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div><h2 className="text-2xl font-bold">Audit Logs</h2><p className="mt-2 text-sm text-gray-400">Review recent administrative actions and the account responsible. The API limits this view to the latest 300 entries.</p></div>
+                <button type="button" className="glass-button" onClick={() => void load()}>Refresh logs</button>
+              </div>
+              <label className="mt-5 grid gap-2 text-sm text-gray-300">Search logs<input value={auditSearch} onChange={e => setAuditSearch(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="Search action, account, entity, ID…" /></label>
+              <div className="mt-5 grid gap-3">
+                {auditLogs.filter(log => [log.action, log.entity, log.entityId, log.actor?.email, log.actor?.name, JSON.stringify(log.metadata || {})].join(" ").toLowerCase().includes(auditSearch.trim().toLowerCase())).map(log => (
+                  <article key={log.id} className="rounded-2xl border border-white/10 p-4">
+                    <div className="flex flex-wrap items-start justify-between gap-2">
+                      <div className="min-w-0"><h3 className="break-words font-semibold">{String(log.action || "Action").replaceAll(".", " ")}</h3><p className="mt-1 text-sm text-cyan-300">{log.actor?.name || log.actor?.email || "System / deleted account"}</p></div>
+                      <time className="text-xs text-gray-500" dateTime={log.createdAt}>{log.createdAt ? new Date(log.createdAt).toLocaleString() : "Unknown time"}</time>
+                    </div>
+                    <p className="mt-2 text-sm text-gray-300">Entity: {log.entity || "—"}{log.entityId ? " · ID: " + log.entityId : ""}</p>
+                    {log.ip && <p className="mt-1 text-xs text-gray-500">IP: {log.ip}</p>}
+                    {log.metadata && <details className="mt-3"><summary className="cursor-pointer text-xs text-gray-400">View action details</summary><pre className="mt-2 overflow-x-auto whitespace-pre-wrap break-words rounded-xl bg-black/20 p-3 text-xs text-gray-300">{JSON.stringify(log.metadata, null, 2)}</pre></details>}
+                  </article>
+                ))}
+                {auditLogs.length === 0 && <p className="text-sm text-gray-400">No audit events have been recorded yet.</p>}
+                {auditLogs.length > 0 && auditLogs.filter(log => [log.action, log.entity, log.entityId, log.actor?.email, log.actor?.name, JSON.stringify(log.metadata || {})].join(" ").toLowerCase().includes(auditSearch.trim().toLowerCase())).length === 0 && <p className="text-sm text-gray-400">No logs match that search.</p>}
               </div>
             </section>
           )}
