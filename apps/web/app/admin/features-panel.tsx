@@ -86,7 +86,9 @@ export default function AdminFeaturePanel({ section, onMessage }: Props) {
   async function saveConfig() {
     let parsed: any;
     try { parsed = JSON.parse(jsonText); } catch { setError("Please enter valid JSON."); return; }
-    await act(async () => request(endpoint[section], { method: "PATCH", body: JSON.stringify(section === "navigation" ? parsed : parsed) }), "Settings saved.");
+    const path = endpoint[section];
+    if (!path) { setError("This admin section has no API endpoint yet."); return; }
+    await act(async () => request(path, { method: "PATCH", body: JSON.stringify(parsed) }), "Settings saved.");
   }
   async function createPage() {
     await act(async () => request("/v1/admin/pages", { method: "POST", body: JSON.stringify({ title, slug: slug || title, kind, excerpt, body }) }), "Draft created.");
