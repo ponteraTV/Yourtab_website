@@ -87,7 +87,11 @@ function VideoPlayer({ src, videoId, captions, onView }: { src?: string | null; 
 type Video = { id:string; title:string; description?:string; views:string|number; hasHls?:boolean; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; captions?:Array<{id:string;language:string;label:string;format:string}>; };
 type PublicAd = { id:string; name:string; type:string; provider?:string; mediaUrl?:string|null; embedCode?:string|null; targetUrl?:string|null; };
 
-const API = process.env.NEXT_PUBLIC_API_URL || "/api";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+// Cloudflare Pages is a static frontend; API calls must target the deployed API host, not Pages /api.
+const API = configuredApiUrl && /^https?:\/\//i.test(configuredApiUrl)
+  ? configuredApiUrl.replace(/\/+$/, "")
+  : "https://api.143-198-191-75.sslip.io/api";
 
 async function api(path:string, options:RequestInit={}) {
   const res = await fetch(`${API}${path}`, { ...options, credentials:"include", headers:{"Content-Type":"application/json", ...(options.headers||{})} });
