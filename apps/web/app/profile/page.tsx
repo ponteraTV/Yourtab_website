@@ -3,7 +3,11 @@
 import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
-const API = process.env.NEXT_PUBLIC_API_URL || "/api";
+const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
+// Cloudflare Pages is a static frontend; target the deployed API host instead of Pages /api.
+const API = configuredApiUrl && /^https?:\/\//i.test(configuredApiUrl)
+  ? configuredApiUrl.replace(/\/+$/, "")
+  : "https://api.143-198-191-75.sslip.io/api";
 
 type Profile = {
   id: string;
