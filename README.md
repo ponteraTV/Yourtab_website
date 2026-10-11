@@ -146,3 +146,5 @@ pnpm build
 ```
 
 Never commit production `.env` files or secrets.
+
+<!-- Temporary CI rebuild trigger; no product behavior change. -->
