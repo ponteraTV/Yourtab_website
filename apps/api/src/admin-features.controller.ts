@@ -106,6 +106,28 @@ export class AdminFeaturesController {
     catch (e: any) { if (e?.code === "P2025") throw new NotFoundException("Comment not found"); throw e; }
   }
 
+  @Get("playlists")
+  async playlists(@Req() req: Request) {
+    const p = await principal(req); staff(p);
+    return { data: await prisma.playlist.findMany({ include: { user: { select: { id: true, name: true, email: true } }, items: { include: { video: { select: { id: true, title: true, status: true } } } } }, orderBy: { updatedAt: "desc" }, take: 500 }) };
+  }
+  @Patch("playlists/:id")
+  async updatePlaylist(@Req() req: Request, @Param("id") id: string, @Body() b: any) {
+    const p = await principal(req); staff(p);
+    const data: any = {};
+    if (b.isPublic !== undefined) { if (typeof b.isPublic !== "boolean") throw new BadRequestException("isPublic must be true or false"); data.isPublic = b.isPublic; }
+    if (b.name !== undefined) data.name = text(b.name, 120, "Playlist name", true);
+    if (!Object.keys(data).length) throw new BadRequestException("No changes provided");
+    try { const item = await prisma.playlist.update({ where: { id }, data }); await audit(p.id, "playlist.update", "Playlist", id, { fields: Object.keys(data) }); return { data: item }; }
+    catch (e: any) { if (e?.code === "P2025") throw new NotFoundException("Playlist not found"); throw e; }
+  }
+  @Delete("playlists/:id")
+  async deletePlaylist(@Req() req: Request, @Param("id") id: string) {
+    const p = await principal(req); staff(p);
+    try { await prisma.playlist.delete({ where: { id } }); await audit(p.id, "playlist.delete", "Playlist", id); return { data: { ok: true } }; }
+    catch (e: any) { if (e?.code === "P2025") throw new NotFoundException("Playlist not found"); throw e; }
+  }
+
   @Get("roles")
   async roles(@Req() req: Request) {
     const p = await principal(req); staff(p);
