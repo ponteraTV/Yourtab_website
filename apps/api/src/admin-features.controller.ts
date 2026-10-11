@@ -25,7 +25,7 @@ function text(value: unknown, max: number, field: string, required = false) {
 }
 function slug(value: string) { return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || randomUUID(); }
 async function audit(actorId: string, action: string, entity: string, entityId?: string, metadata?: unknown) {
-  await prisma.auditLog.create({ data: { actorId, action, entity, entityId, metadata: metadata as any } });
+  await prisma.auditLog.create({ data: { actorId, action, entity, entityId: entityId ?? null, metadata: (metadata ?? {}) as any } });
 }
 async function getSetting<T>(key: string, fallback: T): Promise<T> {
   const row = await prisma.platformMetadata.findUnique({ where: { key } });
