@@ -1,3 +1,6 @@
+-- Keep the known production schema drift fix reproducible without dropping data.
+ALTER TABLE IF EXISTS "VideoJob" ADD COLUMN IF NOT EXISTS "progress" INTEGER NOT NULL DEFAULT 0;
+
 CREATE TYPE "ContentKind" AS ENUM ('PAGE', 'POST');
 CREATE TYPE "ContentStatus" AS ENUM ('DRAFT', 'PUBLISHED', 'ARCHIVED');
 CREATE TYPE "CommentStatus" AS ENUM ('PENDING', 'APPROVED', 'HIDDEN');
