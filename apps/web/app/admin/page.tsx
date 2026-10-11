@@ -46,6 +46,14 @@ export default function AdminPage() {
   const [videos, setVideos] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [tags, setTags] = useState<any[]>([]);
+  const [ads, setAds] = useState<any[]>([]);
+  const [adName, setAdName] = useState("");
+  const [adType, setAdType] = useState("BANNER");
+  const [adMediaUrl, setAdMediaUrl] = useState("");
+  const [adTargetUrl, setAdTargetUrl] = useState("");
+  const [adStartAt, setAdStartAt] = useState("");
+  const [adEndAt, setAdEndAt] = useState("");
+  const [editingAdId, setEditingAdId] = useState("");
   const [categoryName, setCategoryName] = useState("");
   const [categoryDescription, setCategoryDescription] = useState("");
   const [tagName, setTagName] = useState("");
@@ -84,6 +92,7 @@ export default function AdminPage() {
       setVideos(await api("/v1/admin/videos"));
       setCategories(await api("/v1/admin/categories"));
       setTags(await api("/v1/admin/tags"));
+      setAds(await api("/v1/admin/ads"));
       setMsg("");
     } catch (e: any) {
       setMe(null);
@@ -202,6 +211,31 @@ export default function AdminPage() {
       setEditingTagId(""); setMsg("Tag updated."); await load();
     } catch (e: any) { setMsg(e.message || "Could not update tag."); }
   }
+  function resetAdForm() {
+    setAdName(""); setAdType("BANNER"); setAdMediaUrl(""); setAdTargetUrl(""); setAdStartAt(""); setAdEndAt(""); setEditingAdId("");
+  }
+  function editAd(ad: any) {
+    setEditingAdId(ad.id); setAdName(ad.name); setAdType(ad.type); setAdMediaUrl(ad.mediaUrl); setAdTargetUrl(ad.targetUrl || "");
+    setAdStartAt(ad.startAt ? new Date(ad.startAt).toISOString().slice(0,16) : "");
+    setAdEndAt(ad.endAt ? new Date(ad.endAt).toISOString().slice(0,16) : "");
+  }
+  async function saveAd() {
+    const payload = { name: adName.trim(), type: adType, mediaUrl: adMediaUrl.trim(), targetUrl: adTargetUrl.trim() || null, startAt: adStartAt ? new Date(adStartAt).toISOString() : null, endAt: adEndAt ? new Date(adEndAt).toISOString() : null };
+    try {
+      await api(editingAdId ? "/v1/admin/ads/" + editingAdId : "/v1/admin/ads", { method: editingAdId ? "PATCH" : "POST", body: JSON.stringify(payload) });
+      setMsg(editingAdId ? "Advertisement updated." : "Advertisement created in paused state."); resetAdForm(); await load();
+    } catch (e: any) { setMsg(e.message || "Could not save advertisement."); }
+  }
+  async function changeAdStatus(ad: any, status: string) {
+    try { await api("/v1/admin/ads/" + ad.id, { method: "PATCH", body: JSON.stringify({ status }) }); setMsg("Advertisement status updated."); await load(); }
+    catch (e: any) { setMsg(e.message || "Could not update advertisement status."); }
+  }
+  async function deleteAd(ad: any) {
+    if (!window.confirm('Delete advertisement "' + ad.name + '"? This cannot be undone.')) return;
+    try { await api("/v1/admin/ads/" + ad.id, { method: "DELETE" }); if (editingAdId === ad.id) resetAdForm(); setMsg("Advertisement deleted."); await load(); }
+    catch (e: any) { setMsg(e.message || "Could not delete advertisement."); }
+  }
+
   async function deleteTag(id: string, name: string) {
     if (!window.confirm('Delete tag "' + name + '"? Videos will remain, but this tag link will be removed.')) return;
     try { await api("/v1/admin/tags/" + id, { method: "DELETE" }); setMsg("Tag deleted."); await load(); }
@@ -302,7 +336,7 @@ export default function AdminPage() {
     },
   ];
   const sections = menuGroups.flatMap((group) => group.items);
-  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
+  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "ads", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
@@ -486,6 +520,33 @@ export default function AdminPage() {
                   {editingTagId === t.id ? <div className="grid gap-3"><input aria-label="Edit tag name" value={editingTagName} onChange={e => setEditingTagName(e.target.value)} maxLength={50} className="glass-input min-w-0 rounded-xl p-3 text-white" /><div className="flex gap-2"><button type="button" className="glass-button" onClick={() => void saveTag(t.id)}>Save</button><button type="button" className="glass-button" onClick={() => setEditingTagId("")}>Cancel</button></div></div> : <div className="flex flex-wrap items-center gap-2"><span className="break-all font-medium">{t.name}</span><button type="button" className="glass-button" onClick={() => { setEditingTagId(t.id); setEditingTagName(t.name); }}>Edit</button><button type="button" className="glass-button" onClick={() => void deleteTag(t.id, t.name)}>Delete</button></div>}
                 </div>)}
                 {tags.length === 0 && <p className="text-sm text-gray-400">No tags yet.</p>}
+              </div>
+            </section>
+          )}
+
+          {activeSection === "ads" && (
+            <section className="glass-panel rounded-3xl p-5 sm:p-6">
+              <h2 className="text-2xl font-bold">Advertisement management</h2>
+              <p className="mt-2 text-sm text-gray-400">Create banner or video ads, schedule campaigns, and pause or archive them. New ads start paused and must be activated deliberately.</p>
+              <form className="mt-5 grid gap-3" onSubmit={e => { e.preventDefault(); void saveAd(); }}>
+                <label className="grid gap-2 text-sm text-gray-300">Ad name<input required minLength={2} maxLength={120} value={adName} onChange={e => setAdName(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="Campaign name" /></label>
+                <label className="grid gap-2 text-sm text-gray-300">Placement<select value={adType} onChange={e => setAdType(e.target.value)} className="glass-input rounded-xl p-3 text-white"><option value="BANNER">Banner</option><option value="PRE_ROLL">Pre-roll video</option><option value="MID_ROLL">Mid-roll video</option><option value="POST_ROLL">Post-roll video</option></select></label>
+                <label className="grid gap-2 text-sm text-gray-300">Media URL (HTTP/HTTPS)<input required type="url" value={adMediaUrl} onChange={e => setAdMediaUrl(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="https://example.com/ad.mp4 or banner image" /></label>
+                <label className="grid gap-2 text-sm text-gray-300">Click-through URL (optional)<input type="url" value={adTargetUrl} onChange={e => setAdTargetUrl(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="https://advertiser.example" /></label>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <label className="grid gap-2 text-sm text-gray-300">Start date (optional)<input type="datetime-local" value={adStartAt} onChange={e => setAdStartAt(e.target.value)} className="glass-input rounded-xl p-3 text-white" /></label>
+                  <label className="grid gap-2 text-sm text-gray-300">End date (optional)<input type="datetime-local" value={adEndAt} onChange={e => setAdEndAt(e.target.value)} min={adStartAt || undefined} className="glass-input rounded-xl p-3 text-white" /></label>
+                </div>
+                <div className="flex flex-wrap gap-2"><button className="glass-button w-fit" type="submit">{editingAdId ? "Save advertisement" : "Create advertisement"}</button>{editingAdId && <button className="glass-button w-fit" type="button" onClick={resetAdForm}>Cancel edit</button>}</div>
+              </form>
+              <div className="mt-7 grid gap-3">
+                {ads.map(ad => <article key={ad.id} className="rounded-2xl border border-white/10 p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1"><h3 className="break-words font-semibold">{ad.name}</h3><p className="mt-1 text-xs text-gray-400">{ad.type.replaceAll("_", " ")} · {ad.status}</p><p className="mt-2 break-all text-sm text-gray-300">{ad.mediaUrl}</p>{ad.targetUrl && <p className="mt-1 break-all text-xs text-cyan-300">Click URL: {ad.targetUrl}</p>}<p className="mt-2 text-xs text-gray-500">Impressions: {String(ad.impressions ?? 0)} · Clicks: {String(ad.clicks ?? 0)}</p><p className="mt-1 text-xs text-gray-500">Starts: {ad.startAt ? new Date(ad.startAt).toLocaleString() : "Immediately"} · Ends: {ad.endAt ? new Date(ad.endAt).toLocaleString() : "No end date"}</p></div>
+                    <div className="flex flex-wrap gap-2"><button type="button" className="glass-button" onClick={() => editAd(ad)}>Edit</button>{ad.status !== "ACTIVE" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "ACTIVE")}>Activate</button>}{ad.status !== "PAUSED" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "PAUSED")}>Pause</button>}{ad.status !== "ARCHIVED" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "ARCHIVED")}>Archive</button>}<button type="button" className="glass-button" onClick={() => void deleteAd(ad)}>Delete</button></div>
+                  </div>
+                </article>)}
+                {ads.length === 0 && <p className="text-sm text-gray-400">No advertisements yet. Create your first campaign above.</p>}
               </div>
             </section>
           )}
