@@ -15,6 +15,17 @@ export default {
       try {
         const upstream = await fetch(target, { method: request.method, headers, body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body, redirect: "manual" });
         const responseHeaders = new Headers(upstream.headers);
+        // Keep HttpOnly session cookies intact when auth responses pass through the Worker.
+        const setCookies = typeof upstream.headers.getSetCookie === "function"
+          ? upstream.headers.getSetCookie()
+          : [];
+        if (setCookies.length > 0) {
+          responseHeaders.delete("Set-Cookie");
+          for (const cookie of setCookies) responseHeaders.append("Set-Cookie", cookie);
+        }
+        if (url.pathname.startsWith("/api/v1/auth/")) {
+          responseHeaders.set("Cache-Control", "no-store");
+        }
         responseHeaders.set("X-Content-Type-Options", "nosniff");
         responseHeaders.set("Referrer-Policy", "origin-when-cross-origin");
         return new Response(upstream.body, { status: upstream.status, statusText: upstream.statusText, headers: responseHeaders });
