@@ -189,7 +189,7 @@ export class AdminFeaturesController {
       for (const item of items) { const d = item[field]; if (d) { const key = d.toISOString().slice(0, 10); counts[key] = (counts[key] || 0) + 1; } }
       return Object.entries(counts).sort(([a], [b]) => a.localeCompare(b)).map(([date, count]) => ({ date, count }));
     };
-    return { data: { periodDays: 30, totals: { users, videos, processingJobs: jobs, adImpressions: Number(ads._sum.impressions || 0), adClicks: Number(ads._sum.clicks || 0) }, dailySignups: daily(recentUsers, "createdAt"), dailyUploads: daily(recentVideos, "createdAt"), dailyWatchHistory: daily(histories, "watchedAt"), topVideos: topVideos.map(v => ({ ...v, views: Number(v.views) })) } };
+    return { data: { periodDays: 30, totals: { users, videos, processingJobs: jobs, adImpressions: Number(ads._sum.impressions || 0), adClicks: Number(ads._sum.clicks || 0) }, dailySignups: daily(recentUsers, "createdAt"), dailyUploads: daily(recentVideos, "createdAt"), dailyWatchHistory: daily(histories, "watchedAt"), topVideos: topVideos.map((v: any) => ({ ...v, views: Number(v.views) })) } };
   }
 
   @Get("revenue")
@@ -199,10 +199,10 @@ export class AdminFeaturesController {
       prisma.advertisement.findMany({ select: { id: true, name: true, status: true, provider: true, impressions: true, clicks: true, createdAt: true }, orderBy: { createdAt: "desc" }, take: 500 }),
       prisma.subscription.findMany({ select: { id: true, planName: true, status: true, amountCents: true, currency: true, createdAt: true, endsAt: true }, orderBy: { createdAt: "desc" }, take: 1000 })
     ]);
-    const active = subscriptions.filter(s => s.status === "ACTIVE");
+    const active = subscriptions.filter((s: any) => s.status === "ACTIVE");
     const totalsByCurrency: Record<string, number> = {};
     for (const s of active) totalsByCurrency[s.currency] = (totalsByCurrency[s.currency] || 0) + s.amountCents;
-    return { data: { note: "Subscription totals are recorded plan values, not verified payment-provider settlements. Ad revenue requires a configured provider report.", activeSubscriptions: active.length, subscriptionValueCentsByCurrency: totalsByCurrency, ads: ads.map(a => ({ ...a, impressions: Number(a.impressions), clicks: Number(a.clicks) })), subscriptions } };
+    return { data: { note: "Subscription totals are recorded plan values, not verified payment-provider settlements. Ad revenue requires a configured provider report.", activeSubscriptions: active.length, subscriptionValueCentsByCurrency: totalsByCurrency, ads: ads.map((a: any) => ({ ...a, impressions: Number(a.impressions), clicks: Number(a.clicks) })), subscriptions } };
   }
 
   @Get("processing")
@@ -308,10 +308,11 @@ export class AdminFeaturesController {
     let userIds: string[];
     if (Array.isArray(b.userIds) && b.userIds.length) {
       if (b.userIds.length > 500) throw new BadRequestException("A broadcast can target at most 500 users");
-      userIds = [...new Set(b.userIds.map((id: unknown) => text(id, 100, "User ID", true)))];
+      const requestedIds = (b.userIds as unknown[]).map((id: unknown) => text(id, 100, "User ID", true));
+      userIds = Array.from(new Set<string>(requestedIds));
     } else {
       const users = await prisma.user.findMany({ where: { status: "ACTIVE" }, select: { id: true }, take: 10000 });
-      userIds = users.map(u => u.id);
+      userIds = users.map((u: any) => u.id);
     }
     if (!userIds.length) return { data: { created: 0 } };
     const result = await prisma.notification.createMany({ data: userIds.map(userId => ({ userId, title, body })) });
