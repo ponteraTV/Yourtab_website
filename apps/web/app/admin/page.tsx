@@ -44,6 +44,16 @@ export default function AdminPage() {
   const [stats, setStats] = useState<any>();
   const [users, setUsers] = useState<any[]>([]);
   const [videos, setVideos] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
+  const [tags, setTags] = useState<any[]>([]);
+  const [categoryName, setCategoryName] = useState("");
+  const [categoryDescription, setCategoryDescription] = useState("");
+  const [tagName, setTagName] = useState("");
+  const [editingCategoryId, setEditingCategoryId] = useState("");
+  const [editingCategoryName, setEditingCategoryName] = useState("");
+  const [editingCategoryDescription, setEditingCategoryDescription] = useState("");
+  const [editingTagId, setEditingTagId] = useState("");
+  const [editingTagName, setEditingTagName] = useState("");
   const [msg, setMsg] = useState("");
   const [upload, setUpload] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
@@ -72,6 +82,8 @@ export default function AdminPage() {
       setStats(await api("/v1/admin/stats"));
       setUsers(await api("/v1/admin/users"));
       setVideos(await api("/v1/admin/videos"));
+      setCategories(await api("/v1/admin/categories"));
+      setTags(await api("/v1/admin/tags"));
       setMsg("");
     } catch (e: any) {
       setMe(null);
@@ -158,6 +170,42 @@ export default function AdminPage() {
     } catch (e: any) {
       setMsg(e.message || "Video update failed");
     }
+  }
+
+
+  async function createCategory() {
+    try {
+      await api("/v1/admin/categories", { method: "POST", body: JSON.stringify({ name: categoryName, description: categoryDescription }) });
+      setCategoryName(""); setCategoryDescription(""); setMsg("Category created."); await load();
+    } catch (e: any) { setMsg(e.message || "Could not create category."); }
+  }
+  async function saveCategory(id: string) {
+    try {
+      await api("/v1/admin/categories/" + id, { method: "PATCH", body: JSON.stringify({ name: editingCategoryName, description: editingCategoryDescription }) });
+      setEditingCategoryId(""); setMsg("Category updated."); await load();
+    } catch (e: any) { setMsg(e.message || "Could not update category."); }
+  }
+  async function deleteCategory(id: string, name: string) {
+    if (!window.confirm('Delete category "' + name + '"? Videos will remain, but this category link will be removed.')) return;
+    try { await api("/v1/admin/categories/" + id, { method: "DELETE" }); setMsg("Category deleted."); await load(); }
+    catch (e: any) { setMsg(e.message || "Could not delete category."); }
+  }
+  async function createTag() {
+    try {
+      await api("/v1/admin/tags", { method: "POST", body: JSON.stringify({ name: tagName }) });
+      setTagName(""); setMsg("Tag created."); await load();
+    } catch (e: any) { setMsg(e.message || "Could not create tag."); }
+  }
+  async function saveTag(id: string) {
+    try {
+      await api("/v1/admin/tags/" + id, { method: "PATCH", body: JSON.stringify({ name: editingTagName }) });
+      setEditingTagId(""); setMsg("Tag updated."); await load();
+    } catch (e: any) { setMsg(e.message || "Could not update tag."); }
+  }
+  async function deleteTag(id: string, name: string) {
+    if (!window.confirm('Delete tag "' + name + '"? Videos will remain, but this tag link will be removed.')) return;
+    try { await api("/v1/admin/tags/" + id, { method: "DELETE" }); setMsg("Tag deleted."); await load(); }
+    catch (e: any) { setMsg(e.message || "Could not delete tag."); }
   }
 
   if (loading) {
@@ -254,7 +302,7 @@ export default function AdminPage() {
     },
   ];
   const sections = menuGroups.flatMap((group) => group.items);
-  const availableSections = ["dashboard", "videos", "users", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
+  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
@@ -396,6 +444,49 @@ export default function AdminPage() {
                   {users.length === 0 && <tr><td className="p-3 text-gray-400" colSpan={5}>No users found.</td></tr>}
                 </tbody>
               </table>
+            </section>
+          )}
+
+
+          {activeSection === "categories" && (
+            <section className="glass-panel rounded-3xl p-5 sm:p-6">
+              <h2 className="text-2xl font-bold">Categories</h2>
+              <p className="mt-2 text-sm text-gray-400">Create, rename, and remove video categories. Removing a category does not delete its videos.</p>
+              <form className="mt-5 grid gap-3" onSubmit={e => { e.preventDefault(); void createCategory(); }}>
+                <label className="grid gap-2 text-sm text-gray-300">Category name<input required minLength={2} maxLength={80} value={categoryName} onChange={e => setCategoryName(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="e.g. Education" /></label>
+                <label className="grid gap-2 text-sm text-gray-300">Description (optional)<textarea maxLength={500} value={categoryDescription} onChange={e => setCategoryDescription(e.target.value)} className="glass-input rounded-xl p-3 text-white" rows={2} placeholder="Short category description" /></label>
+                <button className="glass-button w-fit" type="submit">Add category</button>
+              </form>
+              <div className="mt-6 grid gap-3">
+                {categories.map(c => <div key={c.id} className="rounded-2xl border border-white/10 p-4">
+                  {editingCategoryId === c.id ? <div className="grid gap-3">
+                    <input aria-label="Edit category name" value={editingCategoryName} onChange={e => setEditingCategoryName(e.target.value)} maxLength={80} className="glass-input rounded-xl p-3 text-white" />
+                    <textarea aria-label="Edit category description" value={editingCategoryDescription} onChange={e => setEditingCategoryDescription(e.target.value)} maxLength={500} rows={2} className="glass-input rounded-xl p-3 text-white" />
+                    <div className="flex flex-wrap gap-2"><button type="button" className="glass-button" onClick={() => void saveCategory(c.id)}>Save</button><button type="button" className="glass-button" onClick={() => setEditingCategoryId("")}>Cancel</button></div>
+                  </div> : <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div><p className="font-semibold">{c.name}</p><p className="mt-1 text-sm text-gray-400">{c.description || "No description"} · {c.slug}</p></div>
+                    <div className="flex gap-2"><button type="button" className="glass-button" onClick={() => { setEditingCategoryId(c.id); setEditingCategoryName(c.name); setEditingCategoryDescription(c.description || ""); }}>Edit</button><button type="button" className="glass-button" onClick={() => void deleteCategory(c.id, c.name)}>Delete</button></div>
+                  </div>}
+                </div>)}
+                {categories.length === 0 && <p className="text-sm text-gray-400">No categories yet.</p>}
+              </div>
+            </section>
+          )}
+
+          {activeSection === "tags" && (
+            <section className="glass-panel rounded-3xl p-5 sm:p-6">
+              <h2 className="text-2xl font-bold">Tags</h2>
+              <p className="mt-2 text-sm text-gray-400">Create, rename, and remove tags used to organize videos.</p>
+              <form className="mt-5 flex flex-wrap gap-3" onSubmit={e => { e.preventDefault(); void createTag(); }}>
+                <input required minLength={2} maxLength={50} value={tagName} onChange={e => setTagName(e.target.value)} className="glass-input min-w-0 flex-1 rounded-xl p-3 text-white" placeholder="e.g. tutorial" aria-label="New tag name" />
+                <button className="glass-button" type="submit">Add tag</button>
+              </form>
+              <div className="mt-6 flex flex-wrap gap-3">
+                {tags.map(t => <div key={t.id} className="max-w-full rounded-2xl border border-white/10 p-3">
+                  {editingTagId === t.id ? <div className="grid gap-3"><input aria-label="Edit tag name" value={editingTagName} onChange={e => setEditingTagName(e.target.value)} maxLength={50} className="glass-input min-w-0 rounded-xl p-3 text-white" /><div className="flex gap-2"><button type="button" className="glass-button" onClick={() => void saveTag(t.id)}>Save</button><button type="button" className="glass-button" onClick={() => setEditingTagId("")}>Cancel</button></div></div> : <div className="flex flex-wrap items-center gap-2"><span className="break-all font-medium">{t.name}</span><button type="button" className="glass-button" onClick={() => { setEditingTagId(t.id); setEditingTagName(t.name); }}>Edit</button><button type="button" className="glass-button" onClick={() => void deleteTag(t.id, t.name)}>Delete</button></div>}
+                </div>)}
+                {tags.length === 0 && <p className="text-sm text-gray-400">No tags yet.</p>}
+              </div>
             </section>
           )}
 
