@@ -51,6 +51,8 @@ export default function AdminPage() {
   const [auditSearch, setAuditSearch] = useState("");
   const [adName, setAdName] = useState("");
   const [adType, setAdType] = useState("BANNER");
+  const [adProvider, setAdProvider] = useState("DIRECT");
+  const [adEmbedCode, setAdEmbedCode] = useState("");
   const [adMediaUrl, setAdMediaUrl] = useState("");
   const [adTargetUrl, setAdTargetUrl] = useState("");
   const [adStartAt, setAdStartAt] = useState("");
@@ -215,15 +217,15 @@ export default function AdminPage() {
     } catch (e: any) { setMsg(e.message || "Could not update tag."); }
   }
   function resetAdForm() {
-    setAdName(""); setAdType("BANNER"); setAdMediaUrl(""); setAdTargetUrl(""); setAdStartAt(""); setAdEndAt(""); setEditingAdId("");
+    setAdName(""); setAdType("BANNER"); setAdProvider("DIRECT"); setAdMediaUrl(""); setAdEmbedCode(""); setAdTargetUrl(""); setAdStartAt(""); setAdEndAt(""); setEditingAdId("");
   }
   function editAd(ad: any) {
-    setEditingAdId(ad.id); setAdName(ad.name); setAdType(ad.type); setAdMediaUrl(ad.mediaUrl); setAdTargetUrl(ad.targetUrl || "");
+    setEditingAdId(ad.id); setAdName(ad.name); setAdType(ad.type); setAdProvider(ad.provider || "DIRECT"); setAdMediaUrl(ad.mediaUrl || ""); setAdEmbedCode(ad.embedCode || ""); setAdTargetUrl(ad.targetUrl || "");
     setAdStartAt(ad.startAt ? new Date(ad.startAt).toISOString().slice(0,16) : "");
     setAdEndAt(ad.endAt ? new Date(ad.endAt).toISOString().slice(0,16) : "");
   }
   async function saveAd() {
-    const payload = { name: adName.trim(), type: adType, mediaUrl: adMediaUrl.trim(), targetUrl: adTargetUrl.trim() || null, startAt: adStartAt ? new Date(adStartAt).toISOString() : null, endAt: adEndAt ? new Date(adEndAt).toISOString() : null };
+    const payload = { name: adName.trim(), type: adType, provider: adProvider, mediaUrl: adMediaUrl.trim() || null, embedCode: adEmbedCode.trim() || null, targetUrl: adTargetUrl.trim() || null, startAt: adStartAt ? new Date(adStartAt).toISOString() : null, endAt: adEndAt ? new Date(adEndAt).toISOString() : null };
     try {
       await api(editingAdId ? "/v1/admin/ads/" + editingAdId : "/v1/admin/ads", { method: editingAdId ? "PATCH" : "POST", body: JSON.stringify(payload) });
       setMsg(editingAdId ? "Advertisement updated." : "Advertisement created in paused state."); resetAdForm(); await load();
@@ -530,11 +532,12 @@ export default function AdminPage() {
           {activeSection === "ads" && (
             <section className="glass-panel rounded-3xl p-5 sm:p-6">
               <h2 className="text-2xl font-bold">Advertisement management</h2>
-              <p className="mt-2 text-sm text-gray-400">Create banner or video ads, schedule campaigns, and pause or archive them. New ads start paused and must be activated deliberately.</p>
+              <p className="mt-2 text-sm text-gray-400">Add direct creatives or paste an ad-network tag from Adsterra and other providers. Network code runs inside a sandboxed ad frame. New ads start paused.</p>
               <form className="mt-5 grid gap-3" onSubmit={e => { e.preventDefault(); void saveAd(); }}>
                 <label className="grid gap-2 text-sm text-gray-300">Ad name<input required minLength={2} maxLength={120} value={adName} onChange={e => setAdName(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="Campaign name" /></label>
-                <label className="grid gap-2 text-sm text-gray-300">Placement<select value={adType} onChange={e => setAdType(e.target.value)} className="glass-input rounded-xl p-3 text-white"><option value="BANNER">Banner</option><option value="PRE_ROLL">Pre-roll video</option><option value="MID_ROLL">Mid-roll video</option><option value="POST_ROLL">Post-roll video</option></select></label>
-                <label className="grid gap-2 text-sm text-gray-300">Media URL (HTTP/HTTPS)<input required type="url" value={adMediaUrl} onChange={e => setAdMediaUrl(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="https://example.com/ad.mp4 or banner image" /></label>
+                <label className="grid gap-2 text-sm text-gray-300">Ad source<select value={adProvider} onChange={e => setAdProvider(e.target.value)} className="glass-input rounded-xl p-3 text-white"><option value="DIRECT">Direct image/video URL</option><option value="ADSTERRA">Adsterra tag</option><option value="ADSENSE">Google AdSense tag</option><option value="PROPELLERADS">PropellerAds tag</option><option value="MONETAG">Monetag tag</option><option value="OTHER">Other ad provider</option></select></label>
+                <label className="grid gap-2 text-sm text-gray-300">Placement<select value={adType} onChange={e => setAdType(e.target.value)} className="glass-input rounded-xl p-3 text-white"><option value="BANNER">Banner</option><option value="PRE_ROLL">Pre-roll video (campaign record)</option><option value="MID_ROLL">Mid-roll video (campaign record)</option><option value="POST_ROLL">Post-roll video (campaign record)</option></select></label>
+                {adProvider === "DIRECT" ? <label className="grid gap-2 text-sm text-gray-300">Media URL (HTTP/HTTPS)<input required type="url" value={adMediaUrl} onChange={e => setAdMediaUrl(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="https://example.com/banner.jpg" /></label> : <label className="grid gap-2 text-sm text-gray-300">Ad network code / tag<textarea required value={adEmbedCode} onChange={e => setAdEmbedCode(e.target.value)} maxLength={12000} rows={6} className="glass-input rounded-xl p-3 font-mono text-xs text-white" placeholder="Paste the ad tag supplied by your provider" /><span className="text-xs text-gray-500">Paste the tag exactly as provided in your publisher dashboard. Maximum 12,000 characters. Do not paste account passwords or API secrets.</span></label>}
                 <label className="grid gap-2 text-sm text-gray-300">Click-through URL (optional)<input type="url" value={adTargetUrl} onChange={e => setAdTargetUrl(e.target.value)} className="glass-input rounded-xl p-3 text-white" placeholder="https://advertiser.example" /></label>
                 <div className="grid gap-3 sm:grid-cols-2">
                   <label className="grid gap-2 text-sm text-gray-300">Start date (optional)<input type="datetime-local" value={adStartAt} onChange={e => setAdStartAt(e.target.value)} className="glass-input rounded-xl p-3 text-white" /></label>
@@ -545,7 +548,7 @@ export default function AdminPage() {
               <div className="mt-7 grid gap-3">
                 {ads.map(ad => <article key={ad.id} className="rounded-2xl border border-white/10 p-4">
                   <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1"><h3 className="break-words font-semibold">{ad.name}</h3><p className="mt-1 text-xs text-gray-400">{ad.type.replaceAll("_", " ")} · {ad.status}</p><p className="mt-2 break-all text-sm text-gray-300">{ad.mediaUrl}</p>{ad.targetUrl && <p className="mt-1 break-all text-xs text-cyan-300">Click URL: {ad.targetUrl}</p>}<p className="mt-2 text-xs text-gray-500">Impressions: {String(ad.impressions ?? 0)} · Clicks: {String(ad.clicks ?? 0)}</p><p className="mt-1 text-xs text-gray-500">Starts: {ad.startAt ? new Date(ad.startAt).toLocaleString() : "Immediately"} · Ends: {ad.endAt ? new Date(ad.endAt).toLocaleString() : "No end date"}</p></div>
+                    <div className="min-w-0 flex-1"><h3 className="break-words font-semibold">{ad.name}</h3><p className="mt-1 text-xs text-gray-400">{ad.type.replaceAll("_", " ")} · {ad.provider || "DIRECT"} · {ad.status}</p>{ad.provider && ad.provider !== "DIRECT" ? <p className="mt-2 text-sm text-cyan-300">Network tag saved · sandboxed banner placement</p> : <p className="mt-2 break-all text-sm text-gray-300">{ad.mediaUrl}</p>}{ad.targetUrl && <p className="mt-1 break-all text-xs text-cyan-300">Click URL: {ad.targetUrl}</p>}<p className="mt-2 text-xs text-gray-500">Impressions: {String(ad.impressions ?? 0)} · Clicks: {String(ad.clicks ?? 0)}</p><p className="mt-1 text-xs text-gray-500">Starts: {ad.startAt ? new Date(ad.startAt).toLocaleString() : "Immediately"} · Ends: {ad.endAt ? new Date(ad.endAt).toLocaleString() : "No end date"}</p></div>
                     <div className="flex flex-wrap gap-2"><button type="button" className="glass-button" onClick={() => editAd(ad)}>Edit</button>{ad.status !== "ACTIVE" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "ACTIVE")}>Activate</button>}{ad.status !== "PAUSED" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "PAUSED")}>Pause</button>}{ad.status !== "ARCHIVED" && <button type="button" className="glass-button" onClick={() => void changeAdStatus(ad, "ARCHIVED")}>Archive</button>}<button type="button" className="glass-button" onClick={() => void deleteAd(ad)}>Delete</button></div>
                   </div>
                 </article>)}

@@ -1,0 +1,4 @@
+ALTER TABLE "Advertisement"
+  ADD COLUMN "provider" TEXT NOT NULL DEFAULT 'DIRECT',
+  ADD COLUMN "embedCode" TEXT,
+  ALTER COLUMN "mediaUrl" DROP NOT NULL;
