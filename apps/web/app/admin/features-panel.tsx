@@ -66,7 +66,9 @@ export default function AdminFeaturePanel({ section, onMessage }: Props) {
   async function load() {
     setLoading(true); setError("");
     try {
-      const result = await request(endpoint[section]);
+      const path = endpoint[section];
+      if (!path) throw new Error("This admin section has no API endpoint yet.");
+      const result = await request(path);
       setData(result);
       if (configSections.has(section)) setJsonText(JSON.stringify(section === "navigation" ? { items: result } : result, null, 2));
     } catch (e: any) { setError(e.message || "Could not load this section"); }
