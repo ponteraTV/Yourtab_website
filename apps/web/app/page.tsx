@@ -85,6 +85,7 @@ function VideoPlayer({ src, videoId, captions, onView }: { src?: string | null; 
   </div>;
 }
 type Video = { id:string; title:string; description?:string; views:string|number; hasHls?:boolean; hlsKey?:string|null; streamUrl?:string|null; thumbnailKey?:string|null; captions?:Array<{id:string;language:string;label:string;format:string}>; };
+type PublicAd = { id:string; name:string; type:string; provider?:string; mediaUrl?:string|null; embedCode?:string|null; targetUrl?:string|null; };
 
 const API = process.env.NEXT_PUBLIC_API_URL || "/api";
 
@@ -100,9 +101,10 @@ export default function HomePage() {
   const [search,setSearch]=useState("");
   const [user,setUser]=useState<any>(null);
   const [error,setError]=useState("");
+  const [publicAds,setPublicAds]=useState<PublicAd[]>([]);
 
   const load=async()=>{try{const d=await api(`/v1/videos?search=${encodeURIComponent(search)}`);setVideos(d.items||[]);setError("")}catch(e:any){setError(e.message)}};
-  useEffect(()=>{load();api("/v1/auth/me").then(setUser).catch(()=>{})},[]);
+  useEffect(()=>{load();api("/v1/auth/me").then(setUser).catch(()=>{});api("/v1/ads").then((items:PublicAd[])=>setPublicAds(Array.isArray(items)?items:[])).catch(()=>{})},[]);
 
   async function logout(){
     try { await api("/v1/auth/logout",{method:"POST"}); setUser(null); }
@@ -127,6 +129,7 @@ export default function HomePage() {
         <div className="mt-8 flex flex-col gap-3 sm:flex-row"><input value={search} onChange={e=>setSearch(e.target.value)} onKeyDown={e=>e.key==="Enter"&&load()} placeholder="Search videos..." className="flex-1 rounded-full border border-white/15 bg-white/5 px-5 py-3 outline-none"/><button className="glass-button bg-cyan-400/20" onClick={load}>Search</button></div>
       </div>
     </section>
+    {publicAds.filter(ad=>ad.type==="BANNER").map(ad=><section key={ad.id} aria-label="Advertisement" className="mx-auto max-w-7xl px-6 pb-8"><div className="overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]"><p className="px-3 pt-2 text-[10px] uppercase tracking-widest text-gray-500">Advertisement</p>{ad.provider && ad.provider !== "DIRECT" && ad.embedCode ? <iframe title={ad.name || "Advertisement"} sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" referrerPolicy="strict-origin-when-cross-origin" className="h-[180px] w-full border-0 sm:h-[220px]" srcDoc={"<!doctype html><html><head><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"></head><body style=\"margin:0;display:flex;justify-content:center;overflow:hidden\">"+ad.embedCode+"</body></html>"} /> : ad.mediaUrl ? <a href={ad.targetUrl || "#"} target={ad.targetUrl ? "_blank" : undefined} rel="sponsored noopener noreferrer" className="block">{/\.(mp4|webm|mov)(\?|$)/i.test(ad.mediaUrl) ? <video src={ad.mediaUrl} controls playsInline className="mx-auto max-h-56 w-full object-contain" /> : <img src={ad.mediaUrl} alt={ad.name} loading="lazy" className="mx-auto max-h-56 max-w-full object-contain" />}</a> : null}</div></section>)}
     <section className="mx-auto max-w-7xl px-6 pb-16">
       <div className="mb-6 flex items-center justify-between"><h2 className="text-3xl font-bold">Latest videos</h2><span className="text-sm text-gray-500">{videos.length} results</span></div>
       {error&&<p role="status" className="mb-4 text-sm text-red-300">{error}</p>}
