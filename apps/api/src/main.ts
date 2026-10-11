@@ -15,6 +15,10 @@ BigInt.prototype.toJSON = function () {
 };
 
 async function bootstrap() {
+  const jwtSecret = process.env.JWT_SECRET;
+  if (process.env.NODE_ENV === "production" && (!jwtSecret || jwtSecret === "CHANGE_ME_IN_PRODUCTION" || jwtSecret.length < 32)) {
+    throw new Error("JWT_SECRET must be a random value of at least 32 characters in production");
+  }
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
 
