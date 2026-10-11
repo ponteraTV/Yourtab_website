@@ -298,7 +298,7 @@ export class AdminFeaturesController {
   @Get("storage")
   async storage(@Req() req: Request) {
     const p = await principal(req); admin(p);
-    return { data: { provider: process.env.S3_ENDPOINT ? "S3-compatible storage" : "AWS S3/default", bucketConfigured: !!process.env.S3_BUCKET, region: process.env.S3_REGION || null, endpoint: process.env.S3_ENDPOINT || null, cdnBaseUrl: process.env.S3_PUBLIC_BASE_URL || null, credentialsConfigured: !!(process.env.S3_ACCESS_KEY_ID && process.env.S3_SECRET_ACCESS_KEY), note: "Credentials are never returned by this endpoint. Change credentials in the server environment, not from the browser." } };
+    return { data: { provider: process.env.S3_ENDPOINT ? "S3-compatible storage" : "AWS S3/default", bucketConfigured: !!process.env.S3_BUCKET, region: process.env.S3_REGION || null, endpoint: process.env.S3_ENDPOINT || null, cdnBaseUrl: process.env.S3_PUBLIC_BASE_URL || null, credentialsConfigured: !!((process.env.S3_ACCESS_KEY_ID || process.env.AWS_ACCESS_KEY_ID) && (process.env.S3_SECRET_ACCESS_KEY || process.env.AWS_SECRET_ACCESS_KEY)), note: "Credentials are never returned by this endpoint. Change credentials in the server environment, not from the browser." } };
   }
 
   @Post("notifications/broadcast")
