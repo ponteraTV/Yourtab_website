@@ -135,7 +135,7 @@ export default function HomePage() {
       const isSocialBar = Boolean(ad.embedCode && ad.embedCode.includes("/06/"));
       const bannerHeight = ad.embedCode && ad.embedCode.includes("'height'") && ad.embedCode.includes("90") ? 90 : 180;
       // Keep third-party code isolated; improve narrow-screen layout without granting same-origin access.
-      const safeEmbed = (ad.embedCode || "").replace(/<iframe\\b/gi, '<iframe loading="lazy"');
+      const safeEmbed = (ad.embedCode || "").replace(/<iframe\b/gi, '<iframe loading="lazy"');
       const frame = isNetworkAd ? (
         <iframe
           title={ad.name || "Advertisement"}
