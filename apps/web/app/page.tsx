@@ -133,8 +133,18 @@ export default function HomePage() {
     {publicAds.filter(ad => ad.type === "BANNER").map(ad => {
       const isNetworkAd = Boolean(ad.provider && ad.provider !== "DIRECT" && ad.embedCode);
       const isSocialBar = Boolean(ad.embedCode && ad.embedCode.includes("/06/"));
-      const bannerHeight = ad.embedCode && ad.embedCode.includes("'height'") && ad.embedCode.includes("90") ? 90 : 180;
-      // Keep third-party code isolated; improve narrow-screen layout without granting same-origin access.
+      // Respect common fixed banner sizes while keeping the third-party document sandboxed.
+      const dimension = (name: string) => {
+        const code = ad.embedCode || "";
+        const keyIndex = code.toLowerCase().indexOf(name.toLowerCase());
+        if (keyIndex < 0) return 0;
+        const match = code.slice(keyIndex + name.length).match(/^\s*['"]?\s*:\s*(\d+)/);
+        return match ? Number(match[1]) : 0;
+      };
+      const creativeWidth = dimension("width");
+      const creativeHeight = dimension("height");
+      const bannerHeight = creativeHeight > 0 && creativeHeight <= 600 ? creativeHeight + 10 : 180;
+      // Keep third-party code isolated; do not grant allow-same-origin to ad scripts.
       const safeEmbed = (ad.embedCode || "").replace(/<iframe\b/gi, '<iframe loading="lazy"');
       const frame = isNetworkAd ? (
         <iframe
@@ -142,7 +152,7 @@ export default function HomePage() {
           sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="strict-origin-when-cross-origin"
           className="mx-auto block w-full border-0"
-          style={{ height: isSocialBar ? 110 : bannerHeight, maxWidth: "100%" }}
+          style={{ height: isSocialBar ? 110 : bannerHeight, width: "100%", maxWidth: creativeWidth > 0 ? Math.min(creativeWidth, 728) : "100%" }}
           onLoad={() => console.info("YourTab ad frame loaded", { adId: ad.id, type: ad.type, mobileViewport: typeof window !== "undefined" ? window.innerWidth < 640 : false })}
           srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
             *{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;max-width:100%;overflow:hidden}
