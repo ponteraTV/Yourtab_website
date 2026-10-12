@@ -167,7 +167,7 @@ export default function HomePage() {
               <p className="px-3 pt-2 text-[10px] uppercase tracking-widest text-gray-500">Advertisement</p>
               {isNetworkAd ? frame : ad.mediaUrl ? (
                 <a href={ad.targetUrl || "#"} target={ad.targetUrl ? "_blank" : undefined} rel="sponsored noopener noreferrer" className="block">
-                  /\.(mp4|webm|mov)(\?|$)/i.test(ad.mediaUrl)
+                  {/\.(mp4|webm|mov)(\?|$)/i.test(ad.mediaUrl)
                     ? <video src={ad.mediaUrl} controls playsInline className="mx-auto max-h-56 w-full object-contain" />
                     : <img src={ad.mediaUrl} alt={ad.name} loading="lazy" className="mx-auto max-h-56 max-w-full object-contain" />
                 </a>
