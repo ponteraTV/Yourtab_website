@@ -138,14 +138,14 @@ export default function HomePage() {
         const code = ad.embedCode || "";
         const keyIndex = code.toLowerCase().indexOf(name.toLowerCase());
         if (keyIndex < 0) return 0;
-        const match = code.slice(keyIndex + name.length).match(/^\\s*['"]?\\s*:\\s*(\\d+)/);
+        const match = code.slice(keyIndex + name.length).match(/^\s*['"]?\s*:\s*(\d+)/);
         return match ? Number(match[1]) : 0;
       };
       const creativeWidth = dimension("width");
       const creativeHeight = dimension("height");
       const bannerHeight = creativeHeight > 0 && creativeHeight <= 600 ? creativeHeight + 10 : 180;
       // Keep third-party code isolated; do not grant allow-same-origin to ad scripts.
-      const safeEmbed = (ad.embedCode || "").replace(/<iframe\\b/gi, '<iframe loading="lazy"');
+      const safeEmbed = (ad.embedCode || "").replace(/<iframe\b/gi, '<iframe loading="lazy"');
       const frame = isNetworkAd ? (
         <iframe
           title={ad.name || "Advertisement"}
