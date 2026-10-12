@@ -134,14 +134,21 @@ export default function HomePage() {
       const isNetworkAd = Boolean(ad.provider && ad.provider !== "DIRECT" && ad.embedCode);
       const isSocialBar = Boolean(ad.embedCode && ad.embedCode.includes("/06/"));
       const bannerHeight = ad.embedCode && ad.embedCode.includes("'height'") && ad.embedCode.includes("90") ? 90 : 180;
+      // Keep third-party code isolated; improve narrow-screen layout without granting same-origin access.
+      const safeEmbed = (ad.embedCode || "").replace(/<iframe\b/gi, '<iframe loading="lazy"');
       const frame = isNetworkAd ? (
         <iframe
           title={ad.name || "Advertisement"}
           sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
           referrerPolicy="strict-origin-when-cross-origin"
           className="mx-auto block w-full border-0"
-          style={{ height: isSocialBar ? 110 : bannerHeight }}
-          srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>html,body{margin:0;width:100%;overflow:hidden}body{display:flex;justify-content:center}iframe{max-width:100%!important}</style></head><body>${ad.embedCode}</body></html>`}
+          style={{ height: isSocialBar ? 110 : bannerHeight, maxWidth: "100%" }}
+          onLoad={() => console.info("YourTab ad frame loaded", { adId: ad.id, type: ad.type, mobileViewport: typeof window !== "undefined" ? window.innerWidth < 640 : false })}
+          srcDoc={`<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+            *{box-sizing:border-box}html,body{margin:0;padding:0;width:100%;max-width:100%;overflow:hidden}
+            body{display:flex;justify-content:center;align-items:flex-start}
+            iframe,img,video{max-width:100%!important}
+          </style></head><body>${safeEmbed}</body></html>`}
         />
       ) : null;
       return (
