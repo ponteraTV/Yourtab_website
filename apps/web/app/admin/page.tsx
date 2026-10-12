@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { ChangeEvent } from "react";
+import AdminFeaturePanel from "./features-panel";
 
 // Use the Cloudflare same-origin proxy so session cookies remain first-party.
 const API = "/api";
@@ -342,7 +343,7 @@ export default function AdminPage() {
     },
   ];
   const sections = menuGroups.flatMap((group) => group.items);
-  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "ads", "audit", "profile", ...(me.role === "ADMIN" ? ["upload"] : [])];
+  const availableSections = ["dashboard", "videos", "users", "categories", "tags", "ads", "audit", "profile", "playlists", "pages", "comments", "roles", "subscriptions", "revenue", "analytics", "website", "navigation", "theme", "storage", "processing", "notifications", "settings", ...(me.role === "ADMIN" ? ["upload"] : [])];
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-2 py-4 sm:px-6 sm:py-8">
@@ -411,6 +412,10 @@ export default function AdminPage() {
                 <button type="button" onClick={() => setActiveSection("users")} className="glass-button text-left">♙ Manage users</button>
               </div>
             </section>
+          )}
+
+          {["playlists", "pages", "comments", "roles", "subscriptions", "revenue", "analytics", "website", "navigation", "theme", "storage", "processing", "notifications", "settings"].includes(activeSection) && (
+            <AdminFeaturePanel section={activeSection} onMessage={setMsg} />
           )}
 
           {activeSection === "upload" && (
